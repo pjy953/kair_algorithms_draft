@@ -110,7 +110,9 @@ class AbstractAgent(ABC):
 
 
 class NormalizedActions(gym.ActionWrapper):
-    """Rescale and relocate the actions."""
+    """Rescale and relocate the actions.
+        TODO: Is my SaywerEnv compatiable to this format?
+    """
 
     def action(self, action: np.ndarray) -> np.ndarray:
         """Change the range (-1, 1) to (low, high)."""

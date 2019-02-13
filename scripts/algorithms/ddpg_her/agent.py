@@ -18,8 +18,10 @@ import wandb
 
 import algorithms.common.helper_functions as common_utils
 from algorithms.common.abstract.agent import AbstractAgent
-from algorithms.common.buffer.replay_buffer import ReplayBuffer
+from algorithms.common.buffer.replay_buffer import HER_ReplayBuffer
 from algorithms.common.noise import OUNoise
+from her import Her_sampler
+from normalizer import RunningMeanStd
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -59,6 +61,23 @@ class Agent(AbstractAgent):
             models (tuple): models including actor and critic
             optims (tuple): optimizers for actor and critic
             noise (OUNoise): random noise for exploration
+        
+        Crucial attributes:
+            reward_ftn (method):
+                Example :
+                def goal_distance(goal_a, goal_b):
+                    assert goal_a.shape == goal_b.shape
+                    return np.linalg.norm(goal_a - goal_b, axis=-1)
+                    
+                def compute_reward(self, achieved_goal, goal, info):
+                    # Compute distance between goal and the achieved goal.
+                    d = goal_distance(achieved_goal, goal)
+                    if self.reward_type == 'sparse':
+                        return -(d > self.distance_threshold).astype(np.float32)
+                    else:
+                        return -d
+
+
 
         """
         AbstractAgent.__init__(self, env, args)
@@ -68,64 +87,110 @@ class Agent(AbstractAgent):
         self.hyper_params = hyper_params
         self.curr_state = np.zeros((1,))
         self.noise = noise
+        # get an environment's reward function : sparse / dense 
+        self.reward_ftn = env.reward_ftn(reward_type='sparse')
 
         # load the optimizer and model parameters
         if args.load_from is not None and os.path.exists(args.load_from):
             self.load_params(args.load_from)
 
+        #obs_normalizer
+        self.obs_norm = RunningMeanStd(shape=(1,) + env.obs_shape) #
+        self.goal_norm = RunningMeanStd(shape=(1,) + env.goal_shape) # 
+
+        #HER
+        self.her_sampler = Her_sampler(reward_func=self.reward_ftn)
+        
         # replay memory
-        self.memory = ReplayBuffer(
-            hyper_params["BUFFER_SIZE"], hyper_params["BATCH_SIZE"], self.args.seed
-        )
+        self.memory = HER_ReplayBuffer(
+            hyper_params["BUFFER_SIZE"], hyper_params["BATCH_SIZE"], self.args.seed, normalizer=[self.obs_norm, self.goal_norm],
+            her_sampler=self.her_sampler,
+        reward_ftn = self.reward_ftn)
+        self.ep_obs, self.ep_obs_1, self.ep_ag, self.ep_ag_1, self.ep_g, self.ep_act, self.ep_rew, self.ep_dn = [], [], [], [], [], [], [] , [] 
 
-    def select_action(self, state: np.ndarray) -> torch.Tensor:
+    def _concat_obs(self, obs, g):
+        n_obs = self.obs_norm.normalize(obs)
+        n_g = self.goal_norm.normalize(g)
+        # concatenate the stuffs
+        inputs = np.concatenate([n_obs, n_g])
+        inputs = torch.tensor(inputs, dtype=torch.float32).unsqueeze(0)
+        if self.args.cuda:
+            inputs = inputs.cuda()
+        return inputs
+
+    def select_action(self, obs: np.ndarray, goal: np.ndarray) -> torch.Tensor:
         """Select an action from the input space."""
-        self.curr_state = state
+        self.curr_obs = obs
+        self.des_goal = goal
 
-        state = torch.FloatTensor(state).to(device)
-        selected_action = self.actor(state)
+        obs = torch.FloatTensor(obs).to(device)
+        goal = torch.FloatTensor(goal).to(device)
+        _act_input = _concat_obs(obs, goal)
+        selected_action = self.actor()
         selected_action += torch.FloatTensor(self.noise.sample()).to(device)
 
+        # TODO: Define action limit here
         selected_action = torch.clamp(selected_action, -1.0, 1.0)
 
         return selected_action
 
     def step(self, action: torch.Tensor) -> Tuple[np.ndarray, np.float64, bool]:
-        """Take an action and return the response of the env."""
+        """Take an action and return the response of the env.
+           Since we will apply HER, reward/done at this time is not important.
+           Achieved goal for next state will be appended at the end of each epsode.
+        """
         action = action.detach().cpu().numpy()
-        next_state, reward, done, _ = self.env.step(action)
+        next_observation, reward, done, _ = self.env.step(action) # next obs is tuple
 
-        self.memory.add(self.curr_state, action, reward, next_state, done)
+        next_obs = next_observation['observation']
+        achvd_goal = next_observation['achieved_goal']
 
-        return next_state, reward, done
+        self.ep_obs.append(self.curr_state.copy())
+        self.ep_obs_1.append(next_obs)
+        self.ep_g.append(self.des_goal.copy())
+        self.ep_actions.append(action) 
+        self.ep_rews.append(reward)
+        self.ep_dns.append(done)
+
+        return next_observation, reward, done
+
+    def append_ag_terminal(self, ag_terminal):
+        """Append achieved goal @ terminal state."""
+        self.ep_ag_1 = self.ep_ag[1:]
+        self.ep_ag_1.append(ag_terminal)
 
     def update_model(
         self,
         experiences: Tuple[
             torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-        ],
+        , torch.Tensor],
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Train the model after each episode."""
-        states, actions, rewards, next_states, dones = experiences
+        obs, acts, rews, obs_nxt, goals, dones = experiences
 
         # G_t   = r + gamma * v(s_{t+1})  if state != Terminal
         #       = r                       otherwise
         masks = 1 - dones
-        next_actions = self.actor_target(next_states)
-        next_values = self.critic_target(torch.cat((next_states, next_actions), dim=-1))
+        # next_actions = self.actor_target(next_states)
+        # next_values = self.critic_target(torch.cat((next_states, next_actions), dim=-1))
+        # curr_returns = rewards + self.hyper_params["GAMMA"] * next_values * masks
+        # curr_returns = curr_returns.to(device)
+
+        next_actions = self.actor_target(obs_nxt) # a'
+        next_values = self.critic_target(torch.cat((obs_nxt, next_actions), dim=-1)) # target Q
         curr_returns = rewards + self.hyper_params["GAMMA"] * next_values * masks
         curr_returns = curr_returns.to(device)
 
         # train critic
-        values = self.critic(torch.cat((states, actions), dim=-1))
+        values = self.critic(torch.cat((obs, acts), dim=-1))
         critic_loss = F.mse_loss(values, curr_returns)
-        self.critic_optimizer.zero_grad()
-        critic_loss.backward()
-        self.critic_optimizer.step()
+        self.critic_optimizer.zero_grad() # all grads of all params to zero
+        critic_loss.backward() # compute gradients
+        self.critic_optimizer.step() # apply gradients
 
         # train actor
-        actions = self.actor(states)
-        actor_loss = -self.critic(torch.cat((states, actions), dim=-1)).mean()
+        actions = self.actor(obs)
+        actor_loss = -self.critic(torch.cat((obs, acts), dim=-1)).mean()
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
@@ -184,7 +249,24 @@ class Agent(AbstractAgent):
                     "critic loss": loss[1],
                 }
             )
+    def _normalize_obs(self, obs, g_obs):
+        obs_norm = self.obs_norm.normalize(obs)
+        g_norm = self.goal_norm.normalize(g)
+        # concatenate the stuffs
+        inputs = np.concatenate([obs_norm, g_norm])
+        inputs = torch.tensor(inputs, dtype=torch.float32).unsqueeze(0)
+        if self.args.cuda:
+            inputs = inputs.cuda()
+        return inputs
 
+    def update_normalizers(self, batch_obs):
+        """Update mean / stddev of normaizers from batch observations."""
+        ep_obs, ep_goal = batch_obs
+        nd_obs = np.array(ep_obs)
+        nd_goal = np.array(ep_goal)
+        self.obs_norm.update(nd_obs)
+        self.goal_norm.update(nd_goal)
+        
     def train(self):
         """Train the agent."""
         # logger
@@ -194,26 +276,37 @@ class Agent(AbstractAgent):
             wandb.watch([self.actor, self.critic], log="parameters")
 
         for i_episode in range(1, self.args.episode_num + 1):
-            state = self.env.reset()
+            observation = self.env.reset() # now state is tuple
+            obs = observation['observation']
+            g = observation['desired_goal']
             done = False
             score = 0
             loss_episode = list()
-
+            ep_steps = 0
+            # first loop of HER
             while not done:
-                if self.args.render and i_episode >= self.args.render_after:
-                    self.env.render()
+                ep_steps += 1
+                # if self.args.render and i_episode >= self.args.render_after:
+                #     self.env.render()
 
-                action = self.select_action(state)
-                next_state, reward, done = self.step(action)
+                action = self.select_action(observation) # requires inspection
+                next_observation, reward, done = self.step(action)
+                observation = next_observation
+                score += reward
 
-                if len(self.memory) >= self.hyper_params["BATCH_SIZE"]:
+            # second loop of HER
+            self.append_ag_terminal(ag_terminal=observation['achieved_goal'])
+            self.memory.add_episode_to_buffer([self.ep_obs, self.ep_obs_1, self.ep_ag, self.ep_ag_1, self.ep_g, self.ep_act, self.ep_rew, self.ep_dn])
+            self.memory.execute_normalised_goal_strategy([self.ep_obs, self.ep_obs_1, self.ep_ag, self.ep_ag_1, self.ep_g, self.ep_act, self.ep_rew, self.ep_dn])
+            self.update_normalizers([self.ep_obs, self.ep_g])
+
+            # third loop of HER : train with normalized & substituted obs&goals
+            if len(self.memory) >= self.hyper_params["BATCH_SIZE"]: # ensure sufficient traning data
+                for _ in range(ep_steps): # train as much as rollout steps
                     experiences = self.memory.sample()
                     loss = self.update_model(experiences)
                     loss_episode.append(loss)  # for logging
-
-                state = next_state
-                score += reward
-
+                    
             # logging
             if loss_episode:
                 avg_loss = np.vstack(loss_episode).mean(axis=0)
