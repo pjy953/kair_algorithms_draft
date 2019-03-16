@@ -45,11 +45,16 @@ overhead_orientation = Quaternion(
 
 # to read ee position
 from open_manipulator_msgs.msg import *
-# register(
-#         id='FetchReach-v0',
-#         entry_point='openai_ros:task_envs.fetch_reach.fetch_reach.FetchReachEnv',
-#         timestep_limit=1000,
-#     )
+
+# episode termination condition
+X_MIN = 0.1
+X_MAX = 0.5
+Y_MIN = -0.3
+Y_MAX = 0.3
+Z_MIN = 0.0
+Z_MAX = 0.6
+TERM_COUNT = 10
+SUC_COUNT = 10
 
 
 ACTION_DIM = 3 # Cartesian
@@ -84,6 +89,8 @@ class robotEnv():
         self.reward_rescale = 1.0
         self.isDemo = False
         self.reward_type = 'sparse'
+        self.termination_count = 0
+        self.success_count = 0
 
         self.pub_gripper_position = rospy.Publisher('/open_manipulator/gripper_position/command', Float64, queue_size=1)
         self.pub_gripper_sub_position = rospy.Publisher('/open_manipulator/gripper_sub_position/command', Float64, queue_size=1)
@@ -211,7 +218,10 @@ class robotEnv():
                 print ('======================================================')
                 print ('Terminates current Episode : OUT OF BOUNDARY')
                 print ('======================================================')
-                self.done = True
+            elif self._check_for_success():
+                print ('======================================================')
+                print ('Succeeded current Episode')
+                print ('======================================================')
         _joint_pos, _joint_vels, _joint_effos = self.get_joints_states()
         # obj_pos = self._get_target_obj_obs() # TODO: implement this function call.
 
@@ -283,7 +293,7 @@ class robotEnv():
     def _load_target_block(block_pose=Pose(position=Point(x=0.6725, y=0.1265, z=0.7825)),
                         block_reference_frame="world"):
         # Get Models' Path
-        model_path = rospkg.RosPack().get_path('kair_algorithms')+"/urdf/"
+        model_path = rospkg.RosPack().get_path('test_om')+"/models/"
 
         # Load Block URDF
         block_xml = ''
@@ -310,14 +320,28 @@ class robotEnv():
         """
         Check if the agent has reached undesirable state. If so, terminate the episode early.
         """
-        # raise NotImplementedError()
-        pass
-
+        _ee_pose = self.get_gripper_position()
+        if not ((X_MIN < _ee_pose[0] < X_MAX) and (Y_MIN < _ee_pose[1] < Y_MAX) and (Z_MIN < _ee_pose[1] < Z_MAX)):
+            self.termination_count +=1
+            if self.termination_count == TERM_COUNT:
+                self.done = True
+                self.termination_count = 0
+                return True
+        else:
+            return False
     def _check_for_success(self):
         """
-        Check if the agent has reached undesirable state. If so, terminate the episode early.
+        Check if the agent has succeeded the episode.
         """
-        raise NotImplementedError()
+        _dist = self._get_dist()
+        if _dist < self.distance_threshold:
+            self.success_count +=1
+            if self.success_count == SUC_COUNT:
+                self.done = True
+                self.success_count = 0
+                return True
+        else:
+            return False
 
     def _compute_reward(self):
         """Computes shaped/sparse reward for each episode.
@@ -336,7 +360,7 @@ class robotEnv():
             self._obj_pose = np.array([object_state.pose.position.x, object_state.pose.position.y, object_state.pose.position.z])
         except rospy.ServiceException as e:
             rospy.logerr("Spawn URDF service call failed: {0}".format(e))
-        _ee_pose = np.array(self.gripper_position) # FK state of robot
+        _ee_pose = np.array(self.get_gripper_position()) # FK state of robot
         return np.linalg.norm(_ee_pose-self._obj_pose)
 
     def close(self):
