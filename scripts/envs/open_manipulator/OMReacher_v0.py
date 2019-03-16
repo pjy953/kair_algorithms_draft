@@ -283,7 +283,7 @@ class robotEnv():
     def _load_target_block(block_pose=Pose(position=Point(x=0.6725, y=0.1265, z=0.7825)),
                         block_reference_frame="world"):
         # Get Models' Path
-        model_path = rospkg.RosPack().get_path('kair_algorithms_draft')+"/urdf/"
+        model_path = rospkg.RosPack().get_path('kair_algorithms')+"/urdf/"
 
         # Load Block URDF
         block_xml = ''
