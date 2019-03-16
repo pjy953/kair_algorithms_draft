@@ -11,7 +11,6 @@ import rospy
 from env.OMReacher_v0 import robotEnv
 
 
-
 def test_reset():
     env = robotEnv()
     obs = env.reset()
