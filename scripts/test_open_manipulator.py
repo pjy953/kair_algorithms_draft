@@ -8,17 +8,17 @@ from math import cos, pi, radians, sin
 import numpy as np
 
 import rospy
-from env.OMReacher_v0 import robotEnv
+from envs.open_manipulator import OpenManipulatorEnv
 
 
 def test_reset():
-    env = robotEnv()
+    env = OpenManipulatorEnv()
     obs = env.reset()
     return obs
 
 
 def test_one_step():
-    env = robotEnv()
+    env = OpenManipulatorEnv()
     obs = env.reset()
     act = -2*pi*sin(i/2000.0)*np.ones(6)
     next_obs, reward, done = env.step(act)
