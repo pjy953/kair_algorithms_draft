@@ -9,12 +9,14 @@ from random import *
 from string import Template
 
 import cv2
+import numpy as np
+import rospkg
+
 import rospy
 from control_msgs.msg import JointTrajectoryControllerState
 from cv_bridge import CvBridge, CvBridgeError
 from gazebo_msgs.msg import ContactsState
-from gazebo_msgs.srv import (DeleteModel, GetModelState, SetModelState,
-                             SpawnModel)
+from gazebo_msgs.srv import DeleteModel, GetModelState, SetModelState, SpawnModel
 # reads open_manipulator's state
 from geometry_msgs.msg import Point, Pose, PoseStamped, Quaternion
 from open_manipulator_msgs.msg import *
@@ -23,16 +25,11 @@ from std_msgs.msg import *
 from tf import TransformListener
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
-import numpy as np
-import rospkg
-
 base_dir = os.path.dirname(os.path.realpath(__file__))
 
 overhead_orientation = Quaternion(
-                         x=-0.00142460053167,
-                         y=0.999994209902,
-                         z=-0.00177030764765,
-                         w=0.00253311793936)
+    x=-0.00142460053167, y=0.999994209902, z=-0.00177030764765, w=0.00253311793936
+)
 
 
 # episode termination condition
@@ -53,13 +50,19 @@ OBS_DIM = (100, 100, 3)  # POMDP
 STATE_DIM = 24  # MDP
 
 
-class OpenManipulatorEnv():
-    def __init__(self, max_steps=700, isdagger=False, isPOMDP=False, isreal=False,
-        train_indicator=0):
+class OpenManipulatorEnv:
+    def __init__(
+        self,
+        max_steps=700,
+        isdagger=False,
+        isPOMDP=False,
+        isreal=False,
+        train_indicator=0,
+    ):
         """An implementation of OpenAI-Gym style robot reacher environment
         TODO: add method that receives target object's pose as state
         """
-        rospy.init_node('OpenManipulatorEnv')
+        rospy.init_node("OpenManipulatorEnv")
         self.train_indicator = train_indicator  # 0: Train 1:Test
         self.isdagger = isdagger
         self.isPOMDP = isPOMDP
@@ -72,41 +75,72 @@ class OpenManipulatorEnv():
         self.joint_speeds = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_positions = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        self.joint_efforts = [0.0, 0.0, .0, 0.0, 0.0, 0.0, 0.0]
+        self.joint_efforts = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.right_endpoint_position = [0, 0, 0]
         self.max_steps = max_steps
         self.done = False
         self.reward = 0
         self.reward_rescale = 1.0
         self.isDemo = False
-        self.reward_type = 'sparse'
+        self.reward_type = "sparse"
         self.termination_count = 0
         self.success_count = 0
 
-        self.pub_gripper_position = rospy.Publisher('/open_manipulator/gripper_position/command', Float64, queue_size=1)
-        self.pub_gripper_sub_position = rospy.Publisher('/open_manipulator/gripper_sub_position/command', Float64, queue_size=1)
-        self.pub_joint1_position = rospy.Publisher('/open_manipulator/joint1_position/command', Float64, queue_size=1)
-        self.pub_joint2_position = rospy.Publisher('/open_manipulator/joint2_position/command', Float64, queue_size=1)
-        self.pub_joint3_position = rospy.Publisher('/open_manipulator/joint3_position/command', Float64, queue_size=1)
-        self.pub_joint4_position = rospy.Publisher('/open_manipulator/joint4_position/command', Float64, queue_size=1)
+        self.pub_gripper_position = rospy.Publisher(
+            "/open_manipulator/gripper_position/command", Float64, queue_size=1
+        )
+        self.pub_gripper_sub_position = rospy.Publisher(
+            "/open_manipulator/gripper_sub_position/command", Float64, queue_size=1
+        )
+        self.pub_joint1_position = rospy.Publisher(
+            "/open_manipulator/joint1_position/command", Float64, queue_size=1
+        )
+        self.pub_joint2_position = rospy.Publisher(
+            "/open_manipulator/joint2_position/command", Float64, queue_size=1
+        )
+        self.pub_joint3_position = rospy.Publisher(
+            "/open_manipulator/joint3_position/command", Float64, queue_size=1
+        )
+        self.pub_joint4_position = rospy.Publisher(
+            "/open_manipulator/joint4_position/command", Float64, queue_size=1
+        )
 
         # TODO: manage this attribute when it's real test environment
         self.joints_position_cmd = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.kinematics_cmd = [0.0, 0.0, 0.0]
-        self.sub_joint_state = rospy.Subscriber('/open_manipulator/joint_states', JointState, self.joint_state_callback)
+        self.sub_joint_state = rospy.Subscriber(
+            "/open_manipulator/joint_states", JointState, self.joint_state_callback
+        )
         # joint position/velocity/effort
-        self.sub_kinematics_pose = rospy.Subscriber('/open_manipulator/gripper/kinematics_pose', KinematicsPose, self.kinematics_pose_callback)
-        self.sub_robot_state = rospy.Subscriber('/open_manipulator/states', OpenManipulatorState, self.robot_state_callback)
+        self.sub_kinematics_pose = rospy.Subscriber(
+            "/open_manipulator/gripper/kinematics_pose",
+            KinematicsPose,
+            self.kinematics_pose_callback,
+        )
+        self.sub_robot_state = rospy.Subscriber(
+            "/open_manipulator/states", OpenManipulatorState, self.robot_state_callback
+        )
         # cs position / orientation
         # variables for subscribe the joint states
-        self.joint_names = ["gripper", "gripper_sub", "joint1", "joint2", "joint3", "joint4"]  # name: [gripper, gripper_sub, joint1, joint2, joint3, joint4]
+        self.joint_names = [
+            "gripper",
+            "gripper_sub",
+            "joint1",
+            "joint2",
+            "joint3",
+            "joint4",
+        ]  # name: [gripper, gripper_sub, joint1, joint2, joint3, joint4]
         self.joint_positions = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_efforts = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         # ee pose of robot -> used to compute reward.
         self.gripper_position = [0.0, 0.0, 0.0]  # [x, y, z] cartesian position
-        self.gripper_orientiation = [0.0, 0.0, 0.0]  # [x, y, z, w] quaternion orientation
+        self.gripper_orientiation = [
+            0.0,
+            0.0,
+            0.0,
+        ]  # [x, y, z, w] quaternion orientation
         self.distance_threshold = 0.1
 
         # used for per-step elapsed time measurement
@@ -124,7 +158,9 @@ class OpenManipulatorEnv():
 
     def robot_state_callback(self, msg):
         self.moving_state = msg.open_manipulator_moving_state  # "MOVING" / "STOPPED"
-        self.actuator_state = msg.open_manipulator_actuator_state  # "ACTUATOR_ENABLE" / "ACTUATOR_DISABLE"
+        self.actuator_state = (
+            msg.open_manipulator_actuator_state
+        )  # "ACTUATOR_ENABLE" / "ACTUATOR_DISABLE"
 
     def joint_state_callback(self, msg):
         """Callback function of joint states subscriber.
@@ -144,9 +180,18 @@ class OpenManipulatorEnv():
         """
         self.kinematics_pose = msg
         _gripper_position = self.kinematics_pose.pose.position
-        self.gripper_position = [_gripper_position.x, _gripper_position.y, _gripper_position.z]
+        self.gripper_position = [
+            _gripper_position.x,
+            _gripper_position.y,
+            _gripper_position.z,
+        ]
         _gripper_orientiation = self.kinematics_pose.pose.orientation
-        self.gripper_orientiation = [_gripper_orientiation.x, _gripper_orientiation.y, _gripper_orientiation.z, _gripper_orientiation.w]
+        self.gripper_orientiation = [
+            _gripper_orientiation.x,
+            _gripper_orientiation.y,
+            _gripper_orientiation.z,
+            _gripper_orientiation.w,
+        ]
 
     # get and set function
     # ----------------------------
@@ -201,13 +246,13 @@ class OpenManipulatorEnv():
         if not self.isreal:
             self.reward = self._compute_reward()
             if self._check_for_termination():
-                print('======================================================')
-                print('Terminates current Episode : OUT OF BOUNDARY')
-                print('======================================================')
+                print("======================================================")
+                print("Terminates current Episode : OUT OF BOUNDARY")
+                print("======================================================")
             elif self._check_for_success():
-                print('======================================================')
-                print('Succeeded current Episode')
-                print('======================================================')
+                print("======================================================")
+                print("Succeeded current Episode")
+                print("======================================================")
         _joint_pos, _joint_vels, _joint_effos = self.get_joints_states()
         # obj_pos = self._get_target_obj_obs() # TODO: implement this function call.
 
@@ -271,33 +316,40 @@ class OpenManipulatorEnv():
         # Gazebo should already be running. If the service is not
         # available since Gazebo has been killed, it is fine to error out
         try:
-            delete_model = rospy.ServiceProxy('/gazebo/delete_model', DeleteModel)
+            delete_model = rospy.ServiceProxy("/gazebo/delete_model", DeleteModel)
             resp_delete = delete_model("block")
-        except rospy.ServiceException, e:
+        except rospy.ServiceException as e:
             rospy.loginfo("Delete Model service call failed: {0}".format(e))
 
-    def _load_target_block(block_pose=Pose(position=Point(x=0.6725, y=0.1265, z=0.7825)),
-                        block_reference_frame="world"):
+    def _load_target_block(
+        block_pose=Pose(position=Point(x=0.6725, y=0.1265, z=0.7825)),
+        block_reference_frame="world",
+    ):
         # Get Models' Path
-        model_path = rospkg.RosPack().get_path('kair_algorithms')+"/urdf/"
+        model_path = rospkg.RosPack().get_path("kair_algorithms") + "/urdf/"
 
         # Load Block URDF
-        block_xml = ''
+        block_xml = ""
 
-        with open (model_path + "block/model.urdf", "r") as block_file:
-            block_xml = block_file.read().replace('\n', '')
+        with open(model_path + "block/model.urdf", "r") as block_file:
+            block_xml = block_file.read().replace("\n", "")
 
-        rand_pose = Pose(position=Point(x=np.random.uniform(0.1,0.15),
-                                         y=np.random.uniform(0,50.6),
-                                         z=np.random.uniform(0.0,0.1)),
-                                         orientation=overhead_orientation)
+        rand_pose = Pose(
+            position=Point(
+                x=np.random.uniform(0.1, 0.15),
+                y=np.random.uniform(0, 50.6),
+                z=np.random.uniform(0.0, 0.1),
+            ),
+            orientation=overhead_orientation,
+        )
 
         # Spawn Block URDF
-        rospy.wait_for_service('/gazebo/spawn_urdf_model')
+        rospy.wait_for_service("/gazebo/spawn_urdf_model")
         try:
-            spawn_urdf = rospy.ServiceProxy('/gazebo/spawn_urdf_model', SpawnModel)
-            resp_urdf = spawn_urdf("block", block_xml, "/",
-                                rand_pose, block_reference_frame)
+            spawn_urdf = rospy.ServiceProxy("/gazebo/spawn_urdf_model", SpawnModel)
+            resp_urdf = spawn_urdf(
+                "block", block_xml, "/", rand_pose, block_reference_frame
+            )
         except rospy.ServiceException as e:
             rospy.logerr("Spawn URDF service call failed: {0}".format(e))
 
@@ -306,7 +358,11 @@ class OpenManipulatorEnv():
         Check if the agent has reached undesirable state. If so, terminate the episode early.
         """
         _ee_pose = self.get_gripper_position()
-        if not ((X_MIN < _ee_pose[0] < X_MAX) and (Y_MIN < _ee_pose[1] < Y_MAX) and (Z_MIN < _ee_pose[1] < Z_MAX)):
+        if not (
+            (X_MIN < _ee_pose[0] < X_MAX)
+            and (Y_MIN < _ee_pose[1] < Y_MAX)
+            and (Z_MIN < _ee_pose[1] < Z_MAX)
+        ):
             self.termination_count += 1
         if self.termination_count == TERM_COUNT:
             self.done = True
@@ -333,21 +389,31 @@ class OpenManipulatorEnv():
         """Computes shaped/sparse reward for each episode.
         """
         cur_dist = self._get_dist()
-        if self.reward_type == 'sparse':
-            return (cur_dist <= self.distance_threshold).astype(np.float32)  # 1 for success else 0
+        if self.reward_type == "sparse":
+            return (cur_dist <= self.distance_threshold).astype(
+                np.float32
+            )  # 1 for success else 0
         else:
             return -cur_dist - self.squared_sum_vel  # -L2 distance -l2_norm(joint_vels)
 
     def _get_dist(self):
-        rospy.wait_for_service('/gazebo/get_model_state')
+        rospy.wait_for_service("/gazebo/get_model_state")
         try:
-            object_state_srv = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
+            object_state_srv = rospy.ServiceProxy(
+                "/gazebo/get_model_state", GetModelState
+            )
             object_state = object_state_srv("block", "world")
-            self._obj_pose = np.array([object_state.pose.position.x, object_state.pose.position.y, object_state.pose.position.z])
+            self._obj_pose = np.array(
+                [
+                    object_state.pose.position.x,
+                    object_state.pose.position.y,
+                    object_state.pose.position.z,
+                ]
+            )
         except rospy.ServiceException as e:
             rospy.logerr("Spawn URDF service call failed: {0}".format(e))
         _ee_pose = np.array(self.get_gripper_position())  # FK state of robot
-        return np.linalg.norm(_ee_pose-self._obj_pose)
+        return np.linalg.norm(_ee_pose - self._obj_pose)
 
     def close(self):
         rospy.signal_shutdown("done")
