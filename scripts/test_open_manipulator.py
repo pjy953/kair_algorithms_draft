@@ -73,7 +73,7 @@ def test_rotate():
     # assert obs in specific boundary
 
 def test_block_loc():
-    env = robotEnv()
+    env = OpenManipulatorEnv()
     for iter in range(20):
         b_pose =Pose()
         b_pose.position.x = np.random.uniform(0.15, .20)
@@ -88,7 +88,7 @@ def test_block_loc():
 
 
 def test_achieve_goal():
-    env = robotEnv()
+    env = OpenManipulatorEnv()
     for iter in range(20):
         b_pose =Pose()
         b_pose.position.x = np.random.uniform(0.25, .4)
