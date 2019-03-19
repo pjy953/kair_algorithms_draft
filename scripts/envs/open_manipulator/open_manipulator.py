@@ -321,7 +321,7 @@ class OpenManipulatorEnv:
         except rospy.ServiceException as e:
             rospy.loginfo("Delete Model service call failed: {0}".format(e))
 
-    def _load_target_block(
+    def _load_target_block(self,
         block_pose=Pose(position=Point(x=0.6725, y=0.1265, z=0.7825)),
         block_reference_frame="world",
     ):
