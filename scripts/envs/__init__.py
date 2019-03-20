@@ -1,1 +1,1 @@
-from open_manipulator import *
+from open_manipulator.open_manipulator import *

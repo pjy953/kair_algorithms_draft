@@ -334,21 +334,12 @@ class OpenManipulatorEnv:
         with open(model_path + "block/model.urdf", "r") as block_file:
             block_xml = block_file.read().replace("\n", "")
 
-        rand_pose = Pose(
-            position=Point(
-                x=np.random.uniform(0.1, 0.15),
-                y=np.random.uniform(0, 50.6),
-                z=np.random.uniform(0.0, 0.1),
-            ),
-            orientation=overhead_orientation,
-        )
-
         # Spawn Block URDF
         rospy.wait_for_service("/gazebo/spawn_urdf_model")
         try:
             spawn_urdf = rospy.ServiceProxy("/gazebo/spawn_urdf_model", SpawnModel)
             resp_urdf = spawn_urdf(
-                "block", block_xml, "/", rand_pose, block_reference_frame
+                "block", block_xml, "/", block_pose, block_reference_frame
             )
         except rospy.ServiceException as e:
             rospy.logerr("Spawn URDF service call failed: {0}".format(e))

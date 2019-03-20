@@ -49,7 +49,7 @@ def test_forward():
     try:
         task_space_srv = rospy.ServiceProxy('/open_manipulator/goal_task_space_path', SetKinematicsPose)
         resp_delete = task_space_srv("arm","gripper", forward_pose, 2.0 )
-    except rospy.ServiceException, e:
+    except rospy.ServiceException as e:
         rospy.loginfo("Path planning service call failed: {0}".format(e))
 
 def test_rotate():
