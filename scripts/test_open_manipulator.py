@@ -2,6 +2,7 @@
 
 from envs.open_manipulator import OpenManipulatorEnv
 import rospy
+import numpy as np
 
 from geometry_msgs.msg import (
     PoseStamped,
@@ -24,6 +25,12 @@ SetDrawingTrajectory,
 SetJointPosition,
 SetKinematicsPose,
 )
+
+overhead_orientation = Quaternion(
+                            x=-0.00142460053167,
+                            y=0.999994209902,
+                            z=-0.00177030764765,
+                            w=0.00253311793936)
 
 def test_reset():
     env = OpenManipulatorEnv()
