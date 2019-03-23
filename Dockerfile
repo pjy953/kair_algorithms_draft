@@ -25,16 +25,16 @@ RUN source $HOME/.bashrc
 
 # clone ROS packages
 RUN cd src/ && \
-	git clone https://github.com/kairproject/DynamixelSDK.git && \
-	git clone https://github.com/kairproject/dynamixel-workbench.git && \
-	git clone https://github.com/kairproject/dynamixel-workbench-msgs.git && \
-	git clone https://github.com/kairproject/open_manipulator.git && \
-	git clone https://github.com/kairproject/open_manipulator_msgs.git && \
-	git clone https://github.com/kairproject/open_manipulator_simulations.git && \
-	git clone https://github.com/kairproject/robotis_manipulator.git
+	git clone -b kinetic-devel https://github.com/ROBOTIS-GIT/DynamixelSDK.git && \
+	git clone -b kinetic-devel https://github.com/ROBOTIS-GIT/dynamixel-workbench.git && \
+	git clone -b kinetic-devel https://github.com/ROBOTIS-GIT/dynamixel-workbench-msgs.git && \
+	git clone -b kinetic-devel https://github.com/ROBOTIS-GIT/open_manipulator.git && \
+	git clone -b kinetic-devel https://github.com/ROBOTIS-GIT/open_manipulator_msgs.git && \
+	git clone -b kinetic-devel https://github.com/ROBOTIS-GIT/open_manipulator_simulations.git && \
+	git clone -b kinetic-devel https://github.com/ROBOTIS-GIT/robotis_manipulator.git
 
 RUN cd $HOME/catkin_ws/src/DynamixelSDK/python && python setup.py install
 
 # permission setting
-COPY ./modud_kair_control $HOME/catkin_ws/src/modud_kair_control
-RUN chmod -R +x $HOME/catkin_ws/src/modud_kair_control/
+# COPY ./modud_kair_control $HOME/catkin_ws/src/modud_kair_control
+# RUN chmod -R +x $HOME/catkin_ws/src/modud_kair_control/
