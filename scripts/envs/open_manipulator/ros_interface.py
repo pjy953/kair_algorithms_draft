@@ -15,7 +15,6 @@ from std_msgs.msg import Float64
 from tf import TransformListener
 
 base_dir = os.path.dirname(os.path.realpath(__file__))
-
 overhead_orientation = Quaternion(
     x=-0.00142460053167, y=0.999994209902, z=-0.00177030764765, w=0.00253311793936
 )
@@ -39,7 +38,7 @@ class OpenManipulatorRosInterface:
 
         rospy.on_shutdown(self._delete_target_block)
 
-    def publisher_node(self):
+    def publish_node(self):
         self.pub_gripper_position = rospy.Publisher(
             "/open_manipulator/gripper_position/command", Float64, queue_size=1
         )
@@ -62,7 +61,7 @@ class OpenManipulatorRosInterface:
         self.joints_position_cmd = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.kinematics_cmd = [0.0, 0.0, 0.0]
 
-    def subscriber_node(self):
+    def subscribe_node(self):
         self.sub_joint_state = rospy.Subscriber(
             "/open_manipulator/joint_states", JointState, self.joint_state_callback
         )
@@ -83,8 +82,7 @@ class OpenManipulatorRosInterface:
             "joint2",
             "joint3",
             "joint4",
-        ]  # name: [gripper, gripper_sub,
-        # joint1, joint2, joint3, joint4]
+        ]
         self.joint_positions = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_efforts = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -98,7 +96,9 @@ class OpenManipulatorRosInterface:
 
     def joint_state_callback(self, msg):
         """Callback function of joint states subscriber.
-        Argument: msg
+
+        Args:
+            msg (str): TODO: description
         """
         self.joints_states = msg
         self.joint_names = self.joints_states.name
@@ -110,7 +110,9 @@ class OpenManipulatorRosInterface:
 
     def kinematics_pose_callback(self, msg):
         """Callback function of gripper kinematic pose subscriber.
-        Argument: msg
+
+        Args:
+            msg (str): TODO: description
         """
         self.kinematics_pose = msg
         _gripper_position = self.kinematics_pose.pose.position
@@ -128,6 +130,11 @@ class OpenManipulatorRosInterface:
         ]
 
     def robot_state_callback(self, msg):
+        """Callback function of robot state subscriber.
+
+        Args:
+            msg (str): TODO: description
+        """
         self.moving_state = msg.open_manipulator_moving_state  # "MOVING" /
         # "STOPPED"
         self.actuator_state = msg.open_manipulator_actuator_state  #
@@ -135,28 +142,34 @@ class OpenManipulatorRosInterface:
 
     def get_joints_states(self):
         """Returns current joints states of robot including position,
-        velocity, effort
-        Returns: Float64[] self.joints_position, self.joints_velocity,
-        self.joint_effort
+        velocity, effort.
+
+        Returns:
+            Tuple of something (TODO)
         """
         return self.joint_positions, self.joint_velocities, self.joint_efforts
 
     def get_gripper_pose(self):
-        """Returns gripper end effector position
-        Returns: Pose().position, Pose().orientation
+        """Returns gripper end effector position.
+
+        Returns:
+            Type: Description (TODO)
         """
         return self.gripper_position, self.gripper_orientiation
 
     def get_gripper_position(self):
-        """Returns gripper end effector position
-        Returns: Pose().position
+        """Returns gripper end effector position.
+
+        Returns:
+            Tuple of something (TODO)
         """
         return self.gripper_position
 
     def set_joints_position(self, joints_angles):
         """Move joints using joint position command publishers.
-        Argument: joints_position_cmd
-        self.joints_position_cmd = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+        Args:
+            joints_angles (type): Description (TODO)
         """
         # rospy.loginfo(Set joint position)
         self.pub_gripper_position.publish(joints_angles[0])
@@ -167,9 +180,8 @@ class OpenManipulatorRosInterface:
         self.pub_joint4_position.publish(joints_angles[5])
 
     def _reset_gazebo_world(self):
-        """
-        Method that randomly initialize the state of robot agent and
-        surrounding envs (including target obj.)
+        """Initialize randomly the state of robot agent and
+        surrounding envs (including target obj.).
         """
         self._delete_target_block()
 
@@ -181,6 +193,7 @@ class OpenManipulatorRosInterface:
         self._load_target_block()
 
     def init_robot_pose(self):
+        """Description (TODO)"""
         self.pub_gripper_position.publish(np.random.uniform(0.0, 0.1))
         self.pub_joint1_position.publish(np.random.uniform(-0.1, 0.1))
         self.pub_joint2_position.publish(np.random.uniform(-0.1, 0.1))
@@ -189,7 +202,11 @@ class OpenManipulatorRosInterface:
         self._load_target_block()
 
     def _load_target_block(self):
-        block_pose = Pose(position=Point(x=0.6725, y=0.1265, z=0.7825))  # noqa: F841
+        """Description (TODO)"""
+        # Desciription why the below commented code exists (TODO)
+        # block_pose = Pose(position=Point(x=0.6725, y=0.1265, z=0.7825))
+
+        # TODO: No hard-coding
         block_reference_frame = "world"
         model_path = rospkg.RosPack().get_path("kair_algorithms") + "/urdf/"
 
@@ -208,11 +225,10 @@ class OpenManipulatorRosInterface:
         )
 
         rospy.wait_for_service("/gazebo/spawn_urdf_model")
+
         try:
             spawn_urdf = rospy.ServiceProxy("/gazebo/spawn_urdf_model", SpawnModel)
-            resp_urdf = spawn_urdf(  # noqa: F841
-                "block", block_xml, "/", rand_pose, block_reference_frame
-            )
+            spawn_urdf("block", block_xml, "/", rand_pose, block_reference_frame)
         except rospy.ServiceException as e:
             rospy.logerr("Spawn URDF service call failed: {0}".format(e))
 
@@ -224,6 +240,6 @@ class OpenManipulatorRosInterface:
         """
         try:
             delete_model = rospy.ServiceProxy("/gazebo/delete_model", DeleteModel)
-            resp_delete = delete_model("block")  # noqa: F841
+            delete_model("block")
         except rospy.ServiceException as e:
             rospy.loginfo("Delete Model service call failed: {0}".format(e))
