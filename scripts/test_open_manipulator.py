@@ -33,7 +33,7 @@ def test_achieve_goal():
     pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_reset()
     test_forward()
     test_rotate()

@@ -7,7 +7,6 @@ import numpy as np
 import rospy
 from envs.open_manipulator import OpenManipulatorEnv
 
-
 if __name__ == "__main__":
     env = OpenManipulatorEnv()
     _ = env.reset()
