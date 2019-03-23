@@ -166,19 +166,19 @@ class OpenManipulatorRosInterface:
         self.pub_joint3_position.publish(joints_angles[4])
         self.pub_joint4_position.publish(joints_angles[5])
 
-    def reset_gazebo_world(self):
+    def _reset_gazebo_world(self):
         """
         Method that randomly initialize the state of robot agent and
         surrounding envs (including target obj.)
         """
-        self.delete_target_block()
+        self._delete_target_block()
 
         self.pub_gripper_position.publish(np.random.uniform(0.0, 0.1))
         self.pub_joint1_position.publish(np.random.uniform(-0.1, 0.1))
         self.pub_joint2_position.publish(np.random.uniform(-0.1, 0.1))
         self.pub_joint3_position.publish(np.random.uniform(-0.1, 0.1))
         self.pub_joint4_position.publish(np.random.uniform(-0.1, 0.1))
-        self.load_target_block()
+        self._load_target_block()
 
     def init_robot_pose(self):
         self.pub_gripper_position.publish(np.random.uniform(0.0, 0.1))
@@ -186,9 +186,9 @@ class OpenManipulatorRosInterface:
         self.pub_joint2_position.publish(np.random.uniform(-0.1, 0.1))
         self.pub_joint3_position.publish(np.random.uniform(-0.1, 0.1))
         self.pub_joint4_position.publish(np.random.uniform(-0.1, 0.1))
-        self.load_target_block()
+        self._load_target_block()
 
-    def load_target_block(self):
+    def _load_target_block(self):
         block_pose = Pose(position=Point(x=0.6725, y=0.1265, z=0.7825))  # noqa: F841
         block_reference_frame = "world"
         model_path = rospkg.RosPack().get_path("kair_algorithms") + "/urdf/"
@@ -216,7 +216,7 @@ class OpenManipulatorRosInterface:
         except rospy.ServiceException as e:
             rospy.logerr("Spawn URDF service call failed: {0}".format(e))
 
-    def delete_target_block(self):
+    def _delete_target_block(self):
         """This will be called on ROS Exit, deleting Gazebo models
         Do not wait for the Gazebo Delete Model service, since
         Gazebo should already be running. If the service is not

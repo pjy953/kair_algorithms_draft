@@ -55,6 +55,9 @@ class OpenManipulatorReacherEnv(gym.Env):
         self.termination_count = 0
         self.success_count = 0
         self.step_cnt = 0
+        self.tic = 0.0
+        self.toc = 0.0
+        self.elapsed = 0.0        
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -98,7 +101,7 @@ class OpenManipulatorReacherEnv(gym.Env):
                 print("DISTANCE : ", curDist)
             print("PER STEP ELAPSED : ", self.elapsed)
             print("SPARSE REWARD : ", self.reward_rescale * self.reward)
-            print("Current EE pos: ", self.gripper_position)
+            print("Current EE pos: ", self.ros_interface.gripper_position)
             print("Actions: ", act)
 
         obs = np.array([_joint_pos, _joint_vels, _joint_effos])
@@ -117,7 +120,7 @@ class OpenManipulatorReacherEnv(gym.Env):
         a valid initial
         configuration."""
         # did_reset_sim = False
-        self._reset_gazebo_world()
+        self.ros_interface._reset_gazebo_world()
         _joint_pos, _joint_vels, _joint_effos = self.ros_interface.get_joints_states()
         obs = np.array([_joint_pos, _joint_vels, _joint_effos])
 
@@ -138,7 +141,7 @@ class OpenManipulatorReacherEnv(gym.Env):
         """Check if the agent has succeeded the episode.
         """
         _dist = self._get_dist()
-        if _dist < self.distance_threshold:
+        if _dist < self.ros_interface.distance_threshold:
             self.success_count += 1
             if self.success_count == SUC_COUNT:
                 self.done = True
@@ -151,7 +154,7 @@ class OpenManipulatorReacherEnv(gym.Env):
         """Check if the agent has reached undesirable state. If so, terminate
         the episode early.
         """
-        _ee_pose = self.get_gripper_position()
+        _ee_pose = self.ros_interface.get_gripper_position()
         if not (
             (X_MIN < _ee_pose[0] < X_MAX)
             and (Y_MIN < _ee_pose[1] < Y_MAX)
@@ -170,7 +173,7 @@ class OpenManipulatorReacherEnv(gym.Env):
         """
         cur_dist = self._get_dist()
         if self.reward_type == "sparse":
-            return (cur_dist <= self.distance_threshold).astype(
+            return (cur_dist <= self.ros_interface.distance_threshold).astype(
                 np.float32
             )  # 1 for success else 0
         else:
@@ -193,5 +196,5 @@ class OpenManipulatorReacherEnv(gym.Env):
             )
         except rospy.ServiceException as e:
             rospy.logerr("Spawn URDF service call failed: {0}".format(e))
-        _ee_pose = np.array(self.get_gripper_position())  # FK state of robot
+        _ee_pose = np.array(self.ros_interface.get_gripper_position())  # FK state of robot
         return np.linalg.norm(_ee_pose - self._obj_pose)
