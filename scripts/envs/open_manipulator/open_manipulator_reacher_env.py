@@ -26,19 +26,20 @@ SUC_COUNT = 10
 
 class OpenManipulatorReacherEnv(gym.Env):
     def __init__(
-        self,
-        max_steps=700,
-        isdagger=False,
-        isPOMDP=False,
-        isreal=False,
-        train_indicator=0,
+            self,
+            max_steps=700,
+            isdagger=False,
+            isPOMDP=False,
+            isreal=False,
+            train_indicator=0,
     ):
 
         self.action_space = spaces.Box(-1.0, 1.0, shape=(ACTION_DIM,), dtype="float32")
         self.observation_space = spaces.Dict(
             dict(
                 observation=spaces.Box(
-                    -np.inf, np.inf, shape=(OBSERVATION_DIM,), dtype="float32"
+                    -np.inf, np.inf, shape=(OBSERVATION_DIM,),
+                    dtype="float32"
                 )
             )
         )
@@ -57,7 +58,7 @@ class OpenManipulatorReacherEnv(gym.Env):
         self.step_cnt = 0
         self.tic = 0.0
         self.toc = 0.0
-        self.elapsed = 0.0        
+        self.elapsed = 0.0
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -156,10 +157,8 @@ class OpenManipulatorReacherEnv(gym.Env):
         """
         _ee_pose = self.ros_interface.get_gripper_position()
         if not (
-            (X_MIN < _ee_pose[0] < X_MAX)
-            and (Y_MIN < _ee_pose[1] < Y_MAX)
-            and (Z_MIN < _ee_pose[1] < Z_MAX)
-        ):
+                (X_MIN < _ee_pose[0] < X_MAX) and (Y_MIN < _ee_pose[1] < Y_MAX) and (
+                Z_MIN < _ee_pose[1] < Z_MAX)):
             self.termination_count += 1
         if self.termination_count == TERM_COUNT:
             self.done = True
@@ -196,5 +195,6 @@ class OpenManipulatorReacherEnv(gym.Env):
             )
         except rospy.ServiceException as e:
             rospy.logerr("Spawn URDF service call failed: {0}".format(e))
-        _ee_pose = np.array(self.ros_interface.get_gripper_position())  # FK state of robot
+        _ee_pose = np.array(
+            self.ros_interface.get_gripper_position())  # FK state of robot
         return np.linalg.norm(_ee_pose - self._obj_pose)
