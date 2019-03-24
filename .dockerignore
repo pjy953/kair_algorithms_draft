@@ -1,2 +1,3 @@
 **
-!/docker_train.sh
+!/docker_gym_train.sh
+!/docker_gazebo_train.sh
