@@ -5,7 +5,6 @@ ENV CATKIN_WS=/root/catkin_ws
 
 SHELL ["/bin/bash", "-c"]
 RUN apt-get update && apt-get -y upgrade && apt-get -y install git wget vim
-
 # install ROS
 RUN sh -c 'echo "deb http://packages.ros.org/ros/ubuntu xenial main" > /etc/apt/sources.list.d/ros-latest.list'
 RUN apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116
@@ -38,6 +37,14 @@ RUN cd src/ && \
 	git clone -b feature/test_env https://github.com/kairproject/kair_algorithms_draft.git
 
 RUN cd src/DynamixelSDK/python && python setup.py install
+
+# install pip
+RUN apt-get update && apt-get install -y python-pip
+RUN python2.7 -m pip install pip --upgrade
+RUN python2.7 -m pip install wheel
+
+# install repository requirements
+RUN cd src/kair_algorithms_draft/scripts && python2.7 -m pip install -r requirements.txt
 
 # TODO: Add in repository
 COPY ./docker_train.sh src/kair_algorithms_draft
