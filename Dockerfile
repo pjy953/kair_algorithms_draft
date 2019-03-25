@@ -2,7 +2,6 @@ FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 ENV ROS_DISTRO kinetic
 ENV HOME=/root
 ENV CATKIN_WS=/root/catkin_ws
-ARG ENVIRONMENT
 
 SHELL ["/bin/bash", "-c"]
 RUN apt-get update && apt-get -y upgrade && apt-get -y install git wget vim
