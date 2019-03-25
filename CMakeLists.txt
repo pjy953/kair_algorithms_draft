@@ -7,6 +7,7 @@ project(kair_algorithms)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   rospy
@@ -19,10 +20,10 @@ find_package(catkin REQUIRED COMPONENTS
   tf
 )
 
-add_message_files( DIRECTORY msg
-FILES
-GoalObs.msg
-)
+# add_message_files( DIRECTORY msg
+# FILES
+# GoalObs.msg
+# )
 
 
 generate_messages(
@@ -37,7 +38,6 @@ catkin_package(
   rospy
   message_generation
   message_runtime
-  cv_bridge
 )
 
 
