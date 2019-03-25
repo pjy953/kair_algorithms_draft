@@ -14,6 +14,9 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   control_msgs
   trajectory_msgs
+  gazebo_msgs
+  message_generation
+  tf
 )
 
 add_message_files( DIRECTORY msg
