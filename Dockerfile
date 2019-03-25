@@ -2,6 +2,7 @@ FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
 ENV ROS_DISTRO kinetic
 ENV HOME=/root
 ENV CATKIN_WS=/root/catkin_ws
+ARG ENVIRONMENT
 
 SHELL ["/bin/bash", "-c"]
 RUN apt-get update && apt-get -y upgrade && apt-get -y install git wget vim
@@ -35,7 +36,7 @@ RUN cd src/ && \
 	git clone -b ${ROS_DISTRO}-devel https://github.com/kairproject/open_manipulator_msgs.git && \
 	git clone -b ${ROS_DISTRO}-devel https://github.com/kairproject/open_manipulator_simulations.git && \
 	git clone -b ${ROS_DISTRO}-devel https://github.com/kairproject/robotis_manipulator.git && \
-	git clone -b feature/porting-python27 https://github.com/kairproject/kair_algorithms_draft.git
+	git clone -b feat/docker https://github.com/kairproject/kair_algorithms_draft.git
 
 RUN cd src/DynamixelSDK/python && python setup.py install
 
@@ -52,13 +53,10 @@ RUN apt-get remove -y python-psutil
 RUN cd src/kair_algorithms_draft/scripts && python2.7 -m pip install -r requirements.txt
 RUN python2.7 -m pip install gym['Box2d']
 
-# TODO: Add docker_train file in repository 
-COPY ./docker_gym_train.sh src/kair_algorithms_draft
-
 # permission setting
 RUN chmod +x -R src/kair_algorithms_draft
 
 # catkin_make
-RUN source /opt/ros/${ROS_DISTRO}/setup.bash && catkin_make
+#RUN source /opt/ros/${ROS_DISTRO}/setup.bash && catkin_make
 
-ENTRYPOINT $CATKIN_WS/src/kair_algorithms_draft/docker_gym_train.sh
+ENTRYPOINT $CATKIN_WS/src/kair_algorithms_draft/docker_train.sh $ENVIRONMENT
