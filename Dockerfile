@@ -36,7 +36,7 @@ RUN cd src/ && \
 	git clone -b ${ROS_DISTRO}-devel https://github.com/kairproject/open_manipulator_msgs.git && \
 	git clone -b ${ROS_DISTRO}-devel https://github.com/kairproject/open_manipulator_simulations.git && \
 	git clone -b ${ROS_DISTRO}-devel https://github.com/kairproject/robotis_manipulator.git && \
-	git clone -b feat/docker https://github.com/kairproject/kair_algorithms_draft.git
+	git clone https://github.com/kairproject/kair_algorithms_draft.git
 
 RUN cd src/DynamixelSDK/python && python setup.py install
 
@@ -57,6 +57,6 @@ RUN python2.7 -m pip install gym['Box2d']
 RUN chmod +x -R src/kair_algorithms_draft
 
 # catkin_make
-#RUN source /opt/ros/${ROS_DISTRO}/setup.bash && catkin_make
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash && catkin_make
 
-ENTRYPOINT $CATKIN_WS/src/kair_algorithms_draft/docker_train.sh $ENVIRONMENT
+ENTRYPOINT ["/root/catkin_ws/src/kair_algorithms_draft/docker_train.sh"]
