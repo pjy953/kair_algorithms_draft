@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-from math import pi
 import sys
+from math import pi
+
 import numpy as np
 import rospy
 from sensor_msgs.msg import JointState
@@ -49,14 +50,14 @@ def cubic(time, time_0, time_f, x_0, x_f, x_dot_0, x_dot_f):
 
 def joint_limit_check(q_target):
     q_limit_L = [-pi * 0.9, -pi * 0.57, -pi * 0.3, -pi * 0.57]
-    q_limit_H = [pi * 0.9, pi * 0.5, pi * 0.44, pi*0.65]
+    q_limit_H = [pi * 0.9, pi * 0.5, pi * 0.44, pi * 0.65]
     for i in range(4):
         if q_target[i] < q_limit_L[i]:
             q_target[i] = q_limit_L[i]
-            print("Out of Joint Limit! Target Changed to Limit Value")
+            print ("Out of Joint Limit! Target Changed to Limit Value")
         elif q_target[i] > q_limit_H[i]:
             q_target[i] = q_limit_H[i]
-            print("Out of Joint Limit! Target Changed to Limit Value")
+            print ("Out of Joint Limit! Target Changed to Limit Value")
     return q_target
 
 
@@ -93,18 +94,14 @@ def main():
 
     rate = rospy.Rate(100)
 
-    comment = \
-        "Type 4 Joint Target Position(degree): " + \
-        "ex) 0.0 0.0 0.0 0.0\n"
-    if(sys.version_info[0] == 2):
+    comment = "Type 4 Joint Target Position(degree): " + "ex) 0.0 0.0 0.0 0.0\n"
+    if sys.version_info[0] == 2:
         j1_target, j2_target, j3_target, j4_target = [
-            float(j_command)
-            for j_command in raw_input(comment).split()
+            float(j_command) for j_command in raw_input(comment).split()
         ]
-    elif(sys.version_info[0] == 3):
+    elif sys.version_info[0] == 3:
         j1_target, j2_target, j3_target, j4_target = [
-            float(j_command)
-            for j_command in input(comment).split()
+            float(j_command) for j_command in input(comment).split()
         ]
     j1_target = j1_target * Deg2Rad
     j2_target = j2_target * Deg2Rad

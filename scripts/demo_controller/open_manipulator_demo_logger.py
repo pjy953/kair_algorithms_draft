@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 # ROS Imports
-import os
-import numpy as np
-import rospy
-from sensor_msgs.msg import JointState
-from std_msgs.msg import Float64MultiArray
-from geometry_msgs.msg import Pose
 import json
 from collections import OrderedDict
+import rospy
+from geometry_msgs.msg import Pose
+from sensor_msgs.msg import JointState
+from std_msgs.msg import Float64MultiArray
 
 
 class DemoLogger(object):
     def __init__(self):
-        print("Logging Program on")
+        print ("Logging Program on")
         self.q_current = [0.0, 0.0, 0.0, 0.0]
         self.q_desired = [0.0, 0.0, 0.0, 0.0]
         self.goal_x = 0.0
@@ -36,8 +34,8 @@ class DemoLogger(object):
 
         rate = rospy.Rate(100)
         while not rospy.is_shutdown():
-            if (rospy.get_param('bool_demo_run') is True):
-                if (self.is_record is False):
+            if rospy.get_param("bool_demo_run") is True:
+                if self.is_record is False:
                     self.data = OrderedDict()
                     self.data["current q"] = []
                     self.data["desired q"] = []
@@ -46,12 +44,11 @@ class DemoLogger(object):
                     self.is_record = True
                 self.log_data()
 
-            if (self.is_record is True and rospy.get_param('bool_demo_run') is False):
-                with open('demo_data.json', 'w') as make_file:
+            if self.is_record is True and rospy.get_param("bool_demo_run") is False:
+                with open("demo_data.json", "w") as make_file:
                     json.dump(self.data, make_file, ensure_ascii=False)
                 break
             rate.sleep()
-
 
     def joint_states_cb(self, joint_states):
         for i in range(4):
@@ -71,7 +68,6 @@ class DemoLogger(object):
         self.data["current q"].append(self.q_current)
         self.data["desired q"].append(self.q_desired)
         self.data["goal"].append([self.goal_x, self.goal_y, self.goal_z])
-
 
 
 def main():

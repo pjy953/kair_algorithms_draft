@@ -1,5 +1,5 @@
 test:
-	flake8 .
+	env PYTHONPATH=./scripts pytest --flake8  # --cov=algorithms
 
 format:
 	black .
