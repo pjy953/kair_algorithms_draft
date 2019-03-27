@@ -22,8 +22,8 @@ class GoalPublisher(object):
         self.init_z = 0.0
         while self.is_ee_pose_cb is False:
             pass
-        print ("Home position X: 0.138 Y: 0.0 Z: 0.239")
-        print ("Init position X: 0.290 Y: 0.0 Z: 0.203")
+        print("Home position X: 0.138 Y: 0.0 Z: 0.239")
+        print("Init position X: 0.290 Y: 0.0 Z: 0.203")
         comment = (
             "Select Mode "
             + "(0: safe init, 1 : safe home, "
@@ -245,12 +245,12 @@ class GoalPublisher(object):
         max_op_distance = 0.4
         if np.linalg.norm(target) > max_op_distance:
             target = target * max_op_distance / np.linalg.norm(target)
-            print ("Target out of range! Target Modified to Limit Value")
+            print("Target out of range! Target Modified to Limit Value")
         if target[1] < 0.0:
             target[1] = 0.0
         if target[2] < 0.04:
             target[2] = 0.04
-            print ("Target too Low! Target z Modified to 4cm")
+            print("Target too Low! Target z Modified to 4cm")
 
         return target
 

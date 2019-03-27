@@ -1958,7 +1958,7 @@ def SimulateControl(
     try:
         import matplotlib.pyplot as plt
     except Exception:
-        print ("The result will not be plotted due to a lack of package matplotlib")
+        print("The result will not be plotted due to a lack of package matplotlib")
     else:
         links = np.array(thetamat).shape[0]
         N = np.array(thetamat).shape[1]

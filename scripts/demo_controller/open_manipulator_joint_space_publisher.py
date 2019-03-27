@@ -54,10 +54,10 @@ def joint_limit_check(q_target):
     for i in range(4):
         if q_target[i] < q_limit_L[i]:
             q_target[i] = q_limit_L[i]
-            print ("Out of Joint Limit! Target Changed to Limit Value")
+            print("Out of Joint Limit! Target Changed to Limit Value")
         elif q_target[i] > q_limit_H[i]:
             q_target[i] = q_limit_H[i]
-            print ("Out of Joint Limit! Target Changed to Limit Value")
+            print("Out of Joint Limit! Target Changed to Limit Value")
     return q_target
 
 

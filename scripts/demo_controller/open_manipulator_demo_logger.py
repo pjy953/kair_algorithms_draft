@@ -10,7 +10,7 @@ from std_msgs.msg import Float64MultiArray
 
 class DemoLogger(object):
     def __init__(self):
-        print ("Logging Program on")
+        print("Logging Program on")
         self.q_current = [0.0, 0.0, 0.0, 0.0]
         self.q_desired = [0.0, 0.0, 0.0, 0.0]
         self.goal_x = 0.0
