@@ -242,16 +242,27 @@ class GoalPublisher(object):
         return x_t
 
     def operation_limit_check(self, target):
+        target = self.operation_box_limit_check(target)
+        target = self.operation_sphere_limit_check(target)
+        return target
+
+    def operation_box_limit_check(self, target):
+        lower_limit = [0.0, -0.15, 0.04]  # x, y, z
+        upper_limit = [0.4, 0.15, 0.3]
+        for i in range(3):
+            if target[i] < lower_limit[i]:
+                target[i] = lower_limit[i]
+                print("Target is out of box boundary!")
+            if target[i] > upper_limit[i]:
+                target[i] = upper_limit[i]
+                print("Target is out of box boundary!")
+        return target
+
+    def operation_sphere_limit_check(self, target):
         max_op_distance = 0.4
         if np.linalg.norm(target) > max_op_distance:
             target = target * max_op_distance / np.linalg.norm(target)
-            print("Target out of range! Target Modified to Limit Value")
-        if target[1] < 0.0:
-            target[1] = 0.0
-        if target[2] < 0.04:
-            target[2] = 0.04
-            print("Target too Low! Target z Modified to 4cm")
-
+            print("Target is out of sphere boundary!")
         return target
 
 
