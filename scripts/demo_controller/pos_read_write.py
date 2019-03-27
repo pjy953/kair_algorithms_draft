@@ -61,16 +61,28 @@ class DynamixelPositionControl(object):
         self.groupBulkReadVelocity = dx.GroupBulkRead(self.portHandler, self.packetHandler)
         # Port Open
         if self.portHandler.openPort():
+<<<<<<< HEAD
             print("Succeeded to open the port")
         else:
             print("Failed to open the port")
+=======
+            print ("Succeeded to open the port")
+        else:
+            print ("Failed to open the port")
+>>>>>>> 8b8661c3743d6483bafc144e99bfeef8813458ed
             quit()
 
         # Set port baudrate
         if self.portHandler.setBaudRate(BAUDRATE):
+<<<<<<< HEAD
             print("Succeeded to change the baudrate")
         else:
             print("Failed to change the baudrate")
+=======
+            print ("Succeeded to change the baudrate")
+        else:
+            print ("Failed to change the baudrate")
+>>>>>>> 8b8661c3743d6483bafc144e99bfeef8813458ed
             quit()
 
         self.packetHandler.write1ByteTxRx(self.portHandler, DXL1_ID, ADDR_OP_MODE, 3)
@@ -252,9 +264,15 @@ class DynamixelPositionControl(object):
 
     def error_check(self, dxl_comm_result, dxl_error):
         if dxl_comm_result != dx.COMM_SUCCESS:
+<<<<<<< HEAD
             print("%s" % self.packetHandler.getTxRxResult(dxl_comm_result))
         elif dxl_error != 0:
             print("%s" % self.packetHandler.getRxPacketError(dxl_error))
+=======
+            print ("%s" % self.packetHandler.getTxRxResult(dxl_comm_result))
+        elif dxl_error != 0:
+            print ("%s" % self.packetHandler.getRxPacketError(dxl_error))
+>>>>>>> 8b8661c3743d6483bafc144e99bfeef8813458ed
 
 
 def main():
