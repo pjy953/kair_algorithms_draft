@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # ROS Imports
 import sys
+
 import numpy as np
 import rospy
 from geometry_msgs.msg import Pose
@@ -19,22 +20,22 @@ class GoalPublisher(object):
         self.init_x = 0.0
         self.init_y = 0.0
         self.init_z = 0.0
-        while(self.is_ee_pose_cb is False):
+        while self.is_ee_pose_cb is False:
             pass
-        print("Home position X: 0.138 Y: 0.0 Z: 0.239")
-        print("Init position X: 0.290 Y: 0.0 Z: 0.203")
+        print ("Home position X: 0.138 Y: 0.0 Z: 0.239")
+        print ("Init position X: 0.290 Y: 0.0 Z: 0.203")
         comment = (
             "Select Mode "
             + "(0: safe init, 1 : safe home, "
             + "2 : init position, 3: home position 4: user define)"
         )
         self.mode = input(comment)
-        rospy.set_param('bool_demo_run', True)
+        rospy.set_param("bool_demo_run", True)
         rate = rospy.Rate(100)
         while not rospy.is_shutdown():
             self.goal_publish()
             if np.mean(np.abs(self.cur_pos - self.target)) < 0.001:
-                rospy.set_param('bool_demo_run', False)
+                rospy.set_param("bool_demo_run", False)
                 break
             rate.sleep()
 
@@ -141,17 +142,18 @@ class GoalPublisher(object):
 
         elif self.mode == 4:
             if self.is_set_target is False:
-                comment = \
-                    "Enter goal position x, y, z, control duration: " + \
-                    "ex) 0.2 0.0 0.2 2.0\n"
-                if(sys.version_info[0] == 3):
+                comment = (
+                    "Enter goal position x, y, z, control duration: "
+                    + "ex) 0.2 0.0 0.2 2.0\n"
+                )
+                if sys.version_info[0] == 3:
                     self.target_x, self.target_y, self.target_z, self.control_duration = [
-                        float(goal)
-                        for goal in input(comment).split()]
-                elif(sys.version_info[0] == 2):
+                        float(goal) for goal in input(comment).split()
+                    ]
+                elif sys.version_info[0] == 2:
                     self.target_x, self.target_y, self.target_z, self.control_duration = [
-                        float(goal)
-                        for goal in raw_input(comment).split()]
+                        float(goal) for goal in raw_input(comment).split()
+                    ]
                 self.target = np.array([self.target_x, self.target_y, self.target_z])
                 self.target = self.operation_limit_check(self.target)
                 self.control_start_time = (
@@ -241,14 +243,14 @@ class GoalPublisher(object):
 
     def operation_limit_check(self, target):
         max_op_distance = 0.4
-        if (np.linalg.norm(target) > max_op_distance):
+        if np.linalg.norm(target) > max_op_distance:
             target = target * max_op_distance / np.linalg.norm(target)
-            print("Target out of range! Target Modified to Limit Value")
+            print ("Target out of range! Target Modified to Limit Value")
         if target[1] < 0.0:
             target[1] = 0.0
         if target[2] < 0.04:
             target[2] = 0.04
-            print("Target too Low! Target z Modified to 4cm")
+            print ("Target too Low! Target z Modified to 4cm")
 
         return target
 

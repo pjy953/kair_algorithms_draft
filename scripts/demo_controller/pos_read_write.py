@@ -3,11 +3,12 @@
 from math import pi
 
 import numpy as np
+
 # ROS Imports
 import rospy
-from dynamixel_sdk import *
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray
+import dynamixel_sdk as dx
 
 Deg2Rad = pi / 180
 Rad2Deg = 1 / Deg2Rad
@@ -51,25 +52,25 @@ class DynamixelPositionControl(object):
     def __init__(self):
         # Dynamixel Setting
         rospy.loginfo("Dynamixel Position Controller Created")
-        self.portHandler = PortHandler(DEVICENAME)
-        self.packetHandler = PacketHandler(PROTOCOL_VERSION)
-        self.groupSyncWrite = GroupSyncWrite(
+        self.portHandler = dx.PortHandler(DEVICENAME)
+        self.packetHandler = dx.PacketHandler(PROTOCOL_VERSION)
+        self.groupSyncWrite = dx.GroupSyncWrite(
             self.portHandler, self.packetHandler, ADDR_GOAL_POSITION, LEN_GOAL_POSITION
         )
-        self.groupBulkReadPosition = GroupBulkRead(self.portHandler, self.packetHandler)
-        self.groupBulkReadVelocity = GroupBulkRead(self.portHandler, self.packetHandler)
+        self.groupBulkReadPosition = dx.GroupBulkRead(self.portHandler, self.packetHandler)
+        self.groupBulkReadVelocity = dx.GroupBulkRead(self.portHandler, self.packetHandler)
         # Port Open
         if self.portHandler.openPort():
-            print("Succeeded to open the port")
+            print ("Succeeded to open the port")
         else:
-            print("Failed to open the port")
+            print ("Failed to open the port")
             quit()
 
         # Set port baudrate
         if self.portHandler.setBaudRate(BAUDRATE):
-            print("Succeeded to change the baudrate")
+            print ("Succeeded to change the baudrate")
         else:
-            print("Failed to change the baudrate")
+            print ("Failed to change the baudrate")
             quit()
 
         self.packetHandler.write1ByteTxRx(self.portHandler, DXL1_ID, ADDR_OP_MODE, 3)
@@ -143,10 +144,10 @@ class DynamixelPositionControl(object):
         self.read_dxl()
         for i in range(4):
             self.dxl_goal_position[i] = [
-                DXL_LOBYTE(DXL_LOWORD(int(self.dxl_present_position[i]))),
-                DXL_HIBYTE(DXL_LOWORD(int(self.dxl_present_position[i]))),
-                DXL_LOBYTE(DXL_HIWORD(int(self.dxl_present_position[i]))),
-                DXL_HIBYTE(DXL_HIWORD(int(self.dxl_present_position[i]))),
+                dx.DXL_LOBYTE(dx.DXL_LOWORD(int(self.dxl_present_position[i]))),
+                dx.DXL_HIBYTE(dx.DXL_LOWORD(int(self.dxl_present_position[i]))),
+                dx.DXL_LOBYTE(dx.DXL_HIWORD(int(self.dxl_present_position[i]))),
+                dx.DXL_HIBYTE(dx.DXL_HIWORD(int(self.dxl_present_position[i]))),
             ]
 
         self.r = rospy.Rate(100)
@@ -182,10 +183,10 @@ class DynamixelPositionControl(object):
                 dxl_command = CCW_LIMIT
 
             self.dxl_goal_position[i] = [
-                DXL_LOBYTE(DXL_LOWORD(dxl_command)),
-                DXL_HIBYTE(DXL_LOWORD(dxl_command)),
-                DXL_LOBYTE(DXL_HIWORD(dxl_command)),
-                DXL_HIBYTE(DXL_HIWORD(dxl_command)),
+                dx.DXL_LOBYTE(dx.DXL_LOWORD(dxl_command)),
+                dx.DXL_HIBYTE(dx.DXL_LOWORD(dxl_command)),
+                dx.DXL_LOBYTE(dx.DXL_HIWORD(dxl_command)),
+                dx.DXL_HIBYTE(dx.DXL_HIWORD(dxl_command)),
             ]
             i += 1
 
@@ -250,10 +251,10 @@ class DynamixelPositionControl(object):
         self.groupSyncWrite.clearParam()
 
     def error_check(self, dxl_comm_result, dxl_error):
-        if dxl_comm_result != COMM_SUCCESS:
-            print("%s" % self.packetHandler.getTxRxResult(dxl_comm_result))
+        if dxl_comm_result != dx.COMM_SUCCESS:
+            print ("%s" % self.packetHandler.getTxRxResult(dxl_comm_result))
         elif dxl_error != 0:
-            print("%s" % self.packetHandler.getRxPacketError(dxl_error))
+            print ("%s" % self.packetHandler.getRxPacketError(dxl_error))
 
 
 def main():

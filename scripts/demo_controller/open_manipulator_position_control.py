@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 import threading
-from math import pow, pi
+from math import pi, pow
 
 import numpy as np
+
 # ROS Imports
 import rospy
 from geometry_msgs.msg import Pose
@@ -10,6 +11,7 @@ from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64, Float64MultiArray
 
 import modern_robotics as r
+
 # Local Imports
 import open_manipulator_description as s
 
@@ -67,7 +69,7 @@ class VelocityControl(object):
             "/open_manipulator/end_effector_pose", Pose, queue_size=3
         )
 
-        rospy.set_param('bool_demo_run', False)
+        rospy.set_param("bool_demo_run", False)
         self.r = rospy.Rate(100)
         while not rospy.is_shutdown():
             if self.is_joint_states_cb is True:
@@ -105,7 +107,7 @@ class VelocityControl(object):
 
     def joint_limit_check(self, q_target):
         q_limit_L = [-pi * 0.9, -pi * 0.57, -pi * 0.3, -pi * 0.57]
-        q_limit_H = [pi * 0.9, pi * 0.5, pi * 0.44, pi*0.65]
+        q_limit_H = [pi * 0.9, pi * 0.5, pi * 0.44, pi * 0.65]
         for i in range(4):
             if q_target[i] < q_limit_L[i]:
                 q_target[i] = q_limit_L[i]
