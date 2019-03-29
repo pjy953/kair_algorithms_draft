@@ -98,7 +98,7 @@ class OpenManipulatorRosInterface:
         """Callback function of joint states subscriber.
 
         Args:
-            msg (str): TODO: description
+            msg (JointState):  Callback message contains joint state.
         """
         self.joints_states = msg
         self.joint_names = self.joints_states.name
@@ -112,7 +112,7 @@ class OpenManipulatorRosInterface:
         """Callback function of gripper kinematic pose subscriber.
 
         Args:
-            msg (str): TODO: description
+            msg (KinematicsPose): Callback message contains kinematics pose.
         """
         self.kinematics_pose = msg
         _gripper_position = self.kinematics_pose.pose.position
@@ -133,7 +133,7 @@ class OpenManipulatorRosInterface:
         """Callback function of robot state subscriber.
 
         Args:
-            msg (str): TODO: description
+            msg (states): Callback message contains openmanipulator's states.
         """
         self.moving_state = msg.open_manipulator_moving_state  # "MOVING" /
         # "STOPPED"
@@ -145,7 +145,7 @@ class OpenManipulatorRosInterface:
         velocity, effort.
 
         Returns:
-            Tuple of something (TODO)
+            Tuple of JointState
         """
         return self.joint_positions, self.joint_velocities, self.joint_efforts
 
@@ -153,7 +153,7 @@ class OpenManipulatorRosInterface:
         """Returns gripper end effector position.
 
         Returns:
-            Type: Description (TODO)
+            Tuple of Pose
         """
         return self.gripper_position, self.gripper_orientiation
 
@@ -161,7 +161,7 @@ class OpenManipulatorRosInterface:
         """Returns gripper end effector position.
 
         Returns:
-            Tuple of something (TODO)
+            Position
         """
         return self.gripper_position
 
@@ -169,7 +169,7 @@ class OpenManipulatorRosInterface:
         """Move joints using joint position command publishers.
 
         Args:
-            joints_angles (type): Description (TODO)
+            joints_angles (Float64): Move joints with angles.
         """
         # rospy.loginfo(Set joint position)
         self.pub_gripper_position.publish(joints_angles[0])
@@ -193,7 +193,7 @@ class OpenManipulatorRosInterface:
         self._load_target_block()
 
     def init_robot_pose(self):
-        """Description (TODO)"""
+        """Initialize robot girpper and joints position"""
         self.pub_gripper_position.publish(np.random.uniform(0.0, 0.1))
         self.pub_joint1_position.publish(np.random.uniform(-0.1, 0.1))
         self.pub_joint2_position.publish(np.random.uniform(-0.1, 0.1))
@@ -202,7 +202,7 @@ class OpenManipulatorRosInterface:
         self._load_target_block()
 
     def _load_target_block(self):
-        """Description (TODO)"""
+        """Load target block Gazebo model"""
         # Desciription why the below commented code exists (TODO)
         # block_pose = Pose(position=Point(x=0.6725, y=0.1265, z=0.7825))
 
