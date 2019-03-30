@@ -65,7 +65,6 @@ class OpenManipulatorRosInterface:
         self.sub_joint_state = rospy.Subscriber(
             "/open_manipulator/joint_states", JointState, self.joint_state_callback
         )
-        # joint position/velocity/effort
         self.sub_kinematics_pose = rospy.Subscriber(
             "/open_manipulator/gripper/kinematics_pose",
             KinematicsPose,
@@ -87,8 +86,8 @@ class OpenManipulatorRosInterface:
         self.joint_velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_efforts = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-        self.gripper_position = [0.0, 0.0, 0.0]  # [x, y, z] cartesian position
-        self.gripper_orientiation = [0.0, 0.0, 0.0]  # [x, y, z, w] quaternion
+        self.gripper_position = [0.0, 0.0, 0.0]
+        self.gripper_orientiation = [0.0, 0.0, 0.0]
         self.distance_threshold = 0.1
 
         self.moving_state = ""
@@ -135,10 +134,11 @@ class OpenManipulatorRosInterface:
         Args:
             msg (states): Callback message contains openmanipulator's states.
         """
-        self.moving_state = msg.open_manipulator_moving_state  # "MOVING" /
-        # "STOPPED"
-        self.actuator_state = msg.open_manipulator_actuator_state  #
+        # "MOVING" / "STOPPED"
+        self.moving_state = msg.open_manipulator_moving_state
         # "ACTUATOR_ENABLE" / "ACTUATOR_DISABLE"
+        self.actuator_state = msg.open_manipulator_actuator_state
+
 
     def get_joints_states(self):
         """Returns current joints states of robot including position,
@@ -171,7 +171,6 @@ class OpenManipulatorRosInterface:
         Args:
             joints_angles (Float64): Move joints with angles.
         """
-        # rospy.loginfo(Set joint position)
         self.pub_gripper_position.publish(joints_angles[0])
         self.pub_gripper_sub_position.publish(joints_angles[1])
         self.pub_joint1_position.publish(joints_angles[2])
@@ -203,14 +202,12 @@ class OpenManipulatorRosInterface:
 
     def _load_target_block(self):
         """Load target block Gazebo model"""
-        # Desciription why the below commented code exists (TODO)
-        # block_pose = Pose(position=Point(x=0.6725, y=0.1265, z=0.7825))
+        block_pose = Pose(position=Point(x=0.6725, y=0.1265, z=0.7825))
 
-        # TODO: No hard-coding
         block_reference_frame = "world"
         model_path = rospkg.RosPack().get_path("kair_algorithms") + "/urdf/"
 
-        block_xml = ""  # Load Block URDF
+        block_xml = ""
 
         with open(model_path + "block/model.urdf", "r") as block_file:
             block_xml = block_file.read().replace("\n", "")

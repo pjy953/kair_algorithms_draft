@@ -101,8 +101,6 @@ class OpenManipulatorReacherEnv(gym.Env):
                 print("Succeeded current Episode")
                 print("======================================================")
         _joint_pos, _joint_vels, _joint_effos = self.ros_interface.get_joints_states()
-        # obj_pos = self._get_target_obj_obs() # TODO: implement this
-        #  function call.
 
         if np.mod(self.step_cnt, 10) == 0:
             if not self.is_real:
@@ -132,8 +130,6 @@ class OpenManipulatorReacherEnv(gym.Env):
         Returns:
             obs
         """
-        # TODO: who are you?
-        # did_reset_sim = False
         self.ros_interface._reset_gazebo_world()
         _joint_pos, _joint_vels, _joint_effos = self.ros_interface.get_joints_states()
         obs = np.array([_joint_pos, _joint_vels, _joint_effos])
@@ -168,7 +164,8 @@ class OpenManipulatorReacherEnv(gym.Env):
                 self.done = True
                 self.success_count = 0
                 return True
-            # TODO: return what in else statement??
+            else:
+                return False
         else:
             return False
 
