@@ -79,7 +79,7 @@ class ReplayBuffer(object):
         return len(self.buffer)
 
 
-class NStepTransitionBuffer:
+class NStepTransitionBuffer(object):
     """Fixed-size buffer to store experience tuples.
 
     Attributes:
