@@ -7,12 +7,9 @@
 
 import torch
 import torch.optim as optim
-
 from algorithms.common.networks.mlp import MLP
 from algorithms.common.noise import GaussianNoise
 from algorithms.td3.agent import Agent
-# TODO: replace this import to gym wrapped open manipulator environment
-from envs.open_manipulator.open_manipulator import OpenManipulatorEnv
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
