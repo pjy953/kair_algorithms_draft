@@ -139,7 +139,6 @@ class OpenManipulatorRosInterface:
         # "ACTUATOR_ENABLE" / "ACTUATOR_DISABLE"
         self.actuator_state = msg.open_manipulator_actuator_state
 
-
     def get_joints_states(self):
         """Returns current joints states of robot including position,
         velocity, effort.
