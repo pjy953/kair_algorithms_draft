@@ -3,6 +3,7 @@
 from envs.open_manipulator import OpenManipulatorEnv
 import rospy
 import numpy as np
+from math import pi, cos, sin, radians
 
 from geometry_msgs.msg import (
     PoseStamped,
@@ -123,11 +124,14 @@ def test_workspace_limit():
     """ TODO: add static block 
     """
     env = OpenManipulatorEnv()
-    for iter in range(20):
+    for iter in range(100):
+        _polar_rad = np.random.uniform(0.134, 0.32)
+        _polar_theta = np.random.uniform(-pi*0.7/4, pi*0.7/4)
+
         b_pose =Pose()
-        b_pose.position.x = np.random.uniform(0.25, .6)
-        b_pose.position.y = np.random.uniform(-0.4, 0.4)
-        b_pose.position.z = np.random.uniform(0.0, 0.4)
+        b_pose.position.x = _polar_rad*cos(_polar_theta)
+        b_pose.position.y = _polar_rad*sin(_polar_theta)
+        b_pose.position.z = np.random.uniform(0.05, 0.28)
         b_pose.orientation = overhead_orientation
         env._load_target_block(block_pose=b_pose)
         r_pose = Pose()
@@ -139,7 +143,7 @@ def test_workspace_limit():
         forward_pose.tolerance = 0.0
         try:
             task_space_srv = rospy.ServiceProxy('/open_manipulator/goal_task_space_path', SetKinematicsPose)
-            resp_delete = task_space_srv("arm","gripper", forward_pose, 2.0 )
+            resp_delete = task_space_srv("arm","gripper", forward_pose, 3.0 )
         except rospy.ServiceException, e:
             rospy.loginfo("Path planning service call failed: {0}".format(e))
         rospy.sleep(3.0)
