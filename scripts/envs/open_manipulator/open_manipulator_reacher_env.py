@@ -146,7 +146,7 @@ class OpenManipulatorReacherEnv(gym.Env):
 
     def _check_robot_moving(self):
         """Check if robot has reached its initial pose.
-        
+
         Returns:
             True if not stopped.
         """
@@ -157,7 +157,7 @@ class OpenManipulatorReacherEnv(gym.Env):
 
     def _check_for_success(self):
         """Check if the agent has succeeded the episode.
-        
+
         Returns:
             True when count reaches SUC_COUNT, else False.
         """
@@ -182,10 +182,8 @@ class OpenManipulatorReacherEnv(gym.Env):
         """
         _ee_pose = self.ros_interface.get_gripper_position()
         if not (
-            (X_MIN < _ee_pose[0] < X_MAX)
-            and (Y_MIN < _ee_pose[1] < Y_MAX)
-            and (Z_MIN < _ee_pose[1] < Z_MAX)
-        ):
+                (X_MIN < _ee_pose[0] < X_MAX) and (Y_MIN < _ee_pose[1] < Y_MAX) and (
+                Z_MIN < _ee_pose[1] < Z_MAX)):
             self.termination_count += 1
 
         if self.termination_count == TERM_COUNT:
@@ -197,7 +195,7 @@ class OpenManipulatorReacherEnv(gym.Env):
 
     def _compute_reward(self):
         """Computes shaped/sparse reward for each episode.
-        
+
         Returns:
             reward
         """
