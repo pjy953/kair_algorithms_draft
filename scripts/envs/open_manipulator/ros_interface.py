@@ -6,8 +6,7 @@ import numpy as np
 
 import rospkg
 import rospy
-from cv_bridge import CvBridge
-from gazebo_msgs.srv import DeleteModel, SpawnModel  # GetModelState,
+from gazebo_msgs.srv import DeleteModel, SpawnModel  # GetModelState
 from geometry_msgs.msg import Point, Pose, Quaternion
 from open_manipulator_msgs.msg import KinematicsPose, OpenManipulatorState
 from sensor_msgs.msg import JointState
@@ -25,7 +24,6 @@ class OpenManipulatorRosInterface:
         rospy.init_node("OpenManipulatorRosInterface")
 
         self.tf = TransformListener()
-        self.bridge = CvBridge()
         self.joint_speeds = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_positions = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -201,9 +199,6 @@ class OpenManipulatorRosInterface:
 
     def _load_target_block(self):
         """Load target block Gazebo model"""
-        # TODO: should check why the below line exists
-        # block_pose = Pose(position=Point(x=0.6725, y=0.1265, z=0.7825))
-
         block_reference_frame = "world"
         model_path = rospkg.RosPack().get_path("kair_algorithms") + "/urdf/"
 
@@ -230,7 +225,8 @@ class OpenManipulatorRosInterface:
             rospy.logerr("Spawn URDF service call failed: {0}".format(e))
 
     def _delete_target_block(self):
-        """This will be called on ROS Exit, deleting Gazebo models
+        """This will be called on ROS Exit, deleting Gazebo models.
+
         Do not wait for the Gazebo Delete Model service, since
         Gazebo should already be running. If the service is not
         available since Gazebo has been killed, it is fine to error out
@@ -240,3 +236,12 @@ class OpenManipulatorRosInterface:
             delete_model("block")
         except rospy.ServiceException as e:
             rospy.loginfo("Delete Model service call failed: {0}".format(e))
+
+    def _geom_interpolation(self, in_rad, out_rad, in_z, out_z, query):
+        """interpolates along the outer shell of work space, based on z-position.
+
+        must feed the corresponding radius from inner radius.
+        """
+        slope = (out_z - in_z) / (out_rad - in_rad)
+        intercept = in_z
+        return slope * (query - in_rad) + intercept
