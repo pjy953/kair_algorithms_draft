@@ -5,7 +5,7 @@ from math import cos, pi, sin
 import numpy as np
 
 import rospy
-from envs.open_manipulator import OpenManipulatorEnv
+from envs.open_manipulator_reacher_env import OpenManipulatorReacherEnv
 from geometry_msgs.msg import Pose, Quaternion
 from open_manipulator_msgs.msg import JointPosition, KinematicsPose
 from open_manipulator_msgs.srv import SetJointPosition, SetKinematicsPose
