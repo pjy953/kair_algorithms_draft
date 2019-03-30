@@ -6,9 +6,9 @@ python:
     - "2.7"
 
 install:
+    - make py36
     - make dep
     - make dev
-    - make py36
 
 script:
     # run static analysis and format check
