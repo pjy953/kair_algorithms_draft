@@ -201,7 +201,8 @@ class OpenManipulatorRosInterface:
 
     def _load_target_block(self):
         """Load target block Gazebo model"""
-        block_pose = Pose(position=Point(x=0.6725, y=0.1265, z=0.7825))
+        # TODO: should check why the below line exists
+        # block_pose = Pose(position=Point(x=0.6725, y=0.1265, z=0.7825))
 
         block_reference_frame = "world"
         model_path = rospkg.RosPack().get_path("kair_algorithms") + "/urdf/"
