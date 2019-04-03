@@ -8,7 +8,7 @@ import numpy as np
 import rospkg  # noqa
 import rospy  # noqa
 from config import *
-from gazebo_msgs.srv import DeleteModel, SpawnModel
+from gazebo_msgs.srv import DeleteModel, SpawnModel, GetModelState
 from open_manipulator_msgs.msg import KinematicsPose, OpenManipulatorState
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
@@ -265,7 +265,7 @@ class OpenManipulatorRosBaseInterface(object):
             True when count reaches suc_count, else False.
         """
         _dist = self._get_dist()
-        if _dist < self.ros_interface.distance_threshold:
+        if _dist < self.distance_threshold:
             self.success_count += 1
             if self.success_count == suc_count:
                 self.done = True
@@ -374,6 +374,33 @@ class OpenManipulatorRosGazeboInterface(OpenManipulatorRosBaseInterface):
             delete_model("block")
         except rospy.ServiceException as e:
             rospy.loginfo("Delete Model service call failed: {0}".format(e))
+
+    def _get_dist(self):
+        """Get distance between end effector pose and object pose.
+
+        Returns:
+            L2 norm of end effector pose and object pose.
+        """
+        rospy.wait_for_service("/gazebo/get_model_state")
+
+        try:
+            object_state_srv = rospy.ServiceProxy(
+                "/gazebo/get_model_state", GetModelState
+            )
+            object_state = object_state_srv("block", "world")
+            object_pose = [
+                object_state.pose.position.x,
+                object_state.pose.position.y,
+                object_state.pose.position.z,
+            ]
+            self._obj_pose = np.array(object_pose)
+        except rospy.ServiceException as e:
+            rospy.logerr("Spawn URDF service call failed: {0}".format(e))
+
+        # FK state of robot
+        end_effector_pose = np.array(self.get_gripper_position())
+
+        return np.linalg.norm(end_effector_pose - self._obj_pose)
 
 
 class OpenManipulatorRosRealInterface(OpenManipulatorRosBaseInterface):
