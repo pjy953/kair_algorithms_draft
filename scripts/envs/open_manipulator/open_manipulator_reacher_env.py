@@ -31,9 +31,6 @@ class OpenManipulatorReacherEnv(gym.Env):
         self.episode_steps = 0
         self.done = False
         self.reward = 0
-        self.tic = 0.0
-        self.toc = 0.0
-        self.elapsed = 0.0
 
         self.action_space = self.ros_interface.action_space
         self.observation_space = self.ros_interface.observation_space
@@ -57,9 +54,6 @@ class OpenManipulatorReacherEnv(gym.Env):
         if action is None:
             action = np.array([1, 1, 1, 1, 1, 1])
 
-        self.prev_tic = self.tic
-        self.tic = time.time()
-        self.elapsed = time.time() - self.prev_tic
         self.done = False
 
         if self.episode_steps == self._max_episode_steps:
@@ -69,20 +63,13 @@ class OpenManipulatorReacherEnv(gym.Env):
         act = action.flatten().tolist()
         self.ros_interface.set_joints_position(act)
 
-        if not self.mode == "sim":
+        if self.mode == "sim":
             self.reward = self._compute_reward()
-            if self._check_for_termination():
+            if self.ros_interface._check_for_termination():
                 print("Terminates current Episode : OUT OF BOUNDARY")
-            elif self._check_for_success():
+            elif self.ros_interface._check_for_success():
                 print("Succeeded current Episode")
         obs = self.ros_interface.get_observation()
-
-        if np.mod(self.episode_steps, 10) == 0:
-            print("PER STEP ELAPSED : ", self.elapsed)
-            print("SPARSE REWARD : ", self.reward_rescale_ratio * self.reward)
-            print("CURRNET EE POSITINO: ", self.ros_interface.gripper_position)
-            print("ACIONS: ", act)
-            print("obs", obs)
 
         self.episode_steps += 1
 
@@ -104,7 +91,7 @@ class OpenManipulatorReacherEnv(gym.Env):
             obs (array) : Array of joint position, joint velocity, joint effort
         """
         self.ros_interface._reset_gazebo_world()
-        obs = self.get_observation()
+        obs = self.ros_interface.get_observation()
 
         return obs
 
@@ -125,43 +112,18 @@ class OpenManipulatorReacherEnv(gym.Env):
         Returns:
             reward (Float64) : L2 distance of current distance and squared sum velocity.
         """
-        cur_dist = self._get_dist()
+        cur_dist = self.ros_interface._get_dist()
         if self.reward_func == "sparse":
             # 1 for success else 0
             reward = cur_dist <= self.ros_interface.distance_threshold
             reward = reward.astype(np.float32)
-            return reward
-        else:
+        elif self.reward_func == "l2":
             # -L2 distance
-            reward = -cur_dist - self.squared_sum_vel
-            return reward
+            reward = 1 / cur_dist
+        else:
+            raise ValueError
 
-    def _get_dist(self):
-        """Get distance between end effector pose and object pose.
-
-        Returns:
-            L2 norm of end effector pose and object pose.
-        """
-        rospy.wait_for_service("/gazebo/get_model_state")
-
-        try:
-            object_state_srv = rospy.ServiceProxy(
-                "/gazebo/get_model_state", GetModelState
-            )
-            object_state = object_state_srv("block", "world")
-            object_pose = [
-                object_state.pose.position.x,
-                object_state.pose.position.y,
-                object_state.pose.position.z,
-            ]
-            self._obj_pose = np.array(object_pose)
-        except rospy.ServiceException as e:
-            rospy.logerr("Spawn URDF service call failed: {0}".format(e))
-
-        # FK state of robot
-        end_effector_pose = np.array(self.ros_interface.get_gripper_position())
-
-        return np.linalg.norm(end_effector_pose - self._obj_pose)
+        return reward
 
     def render(self):
         pass

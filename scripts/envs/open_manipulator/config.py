@@ -56,5 +56,5 @@ max_episode_steps = 100
 distance_threshold = 0.1
 
 reward_rescale_ratio = 1.0
-reward_func = "sparse"
+reward_func = "l2"
 control_mode = "position"
