@@ -104,8 +104,7 @@ class OpenManipulatorReacherEnv(gym.Env):
             obs (array) : Array of joint position, joint velocity, joint effort
         """
         self.ros_interface._reset_gazebo_world()
-        _joint_pos, _joint_vels, _joint_effos = self.ros_interface.get_joints_states()
-        obs = np.array([_joint_pos, _joint_vels, _joint_effos])
+        obs = self.get_observation()
 
         return obs
 
@@ -163,6 +162,6 @@ class OpenManipulatorReacherEnv(gym.Env):
         end_effector_pose = np.array(self.ros_interface.get_gripper_position())
 
         return np.linalg.norm(end_effector_pose - self._obj_pose)
-    
+
     def render(self):
         pass
