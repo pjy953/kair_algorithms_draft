@@ -1,41 +1,26 @@
 # ! usr/bin/env python
 
-import os
+from abc import ABCMeta
 
+import gym
 import numpy as np
-from math import pi
 
 import rospkg  # noqa
 import rospy  # noqa
-from gazebo_msgs.srv import DeleteModel, SpawnModel  # GetModelState
-from geometry_msgs.msg import Point, Pose, Quaternion
+from config import *
+from gazebo_msgs.srv import DeleteModel, SpawnModel
 from open_manipulator_msgs.msg import KinematicsPose, OpenManipulatorState
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
-from tf import TransformListener
-
-# Global variables
-TERM_COUNT = 10
-SUC_COUNT = 10
-
-base_dir = os.path.dirname(os.path.realpath(__file__))
-
-overhead_orientation = Quaternion(
-    x=-0.00142460053167, y=0.999994209902, z=-0.00177030764765, w=0.00253311793936
-)
 
 
-# safe joint limits
-joint_limits = {
-    'hi': {'j1': pi * 0.9, 'j2': pi * 0.5, 'j3': pi * 0.44, 'j4': pi * 0.65},
-    'lo': {'j1': -pi * 0.9, 'j2': -pi * 0.57, 'j3': -pi * 0.3, 'j4': -pi * 0.57}}
+class OpenManipulatorRosBaseInterface(object):
 
+    __metaclass__ = ABCMeta
 
-class OpenManipulatorRosInterface:
     def __init__(self):
         rospy.init_node("OpenManipulatorRosInterface")
 
-        self.tf = TransformListener()
         self.termination_count = 0
         self.success_count = 0
 
@@ -101,7 +86,7 @@ class OpenManipulatorRosInterface:
 
         self.gripper_position = [0.0, 0.0, 0.0]
         self.gripper_orientiation = [0.0, 0.0, 0.0]
-        self.distance_threshold = 0.1
+        self.distance_threshold = distance_threshold
 
         self.moving_state = ""
         self.actuator_state = ""
@@ -177,6 +162,74 @@ class OpenManipulatorRosInterface:
         """
         return self.gripper_position
 
+    def get_observation(self):
+        """
+        Get robot observation.
+        :return: robot observation
+        """
+        gripper_pos = np.array(self.gripper_position)
+        gripper_ori = np.array(self.gripper_orientiation)
+
+        # joint space
+        robot_joint_angles = np.array(self.joint_positions)
+        robot_joint_velocities = np.array(self.joint_velocities)
+        robot_joint_efforts = np.array(self.joint_efforts)
+
+        obs = np.concatenate(
+            (
+                gripper_pos,
+                gripper_ori,
+                robot_joint_angles,
+                robot_joint_velocities,
+                robot_joint_efforts,
+            )
+        )
+        return obs
+
+    @property
+    def action_space(self):
+        """ return the open manipulator's action space for this specific environment.
+        """
+        if self._control_mode == "position":
+            lower_bounds = np.array(
+                [
+                    joint_limits["lo"]["j1"],
+                    joint_limits["lo"]["j2"],
+                    joint_limits["lo"]["j3"],
+                    joint_limits["lo"]["j4"],
+                    joint_limits["lo"]["grip"],
+                ]
+            )
+            upper_bounds = np.array(
+                [
+                    joint_limits["hi"]["j1"],
+                    joint_limits["hi"]["j2"],
+                    joint_limits["hi"]["j3"],
+                    joint_limits["hi"]["j4"],
+                    joint_limits["hi"]["grip"],
+                ]
+            )
+        elif self._control_mode == "velocity":
+            raise NotImplementedError(
+                "Control mode %s is not implemented yet." % self._control_mode
+            )
+
+        elif self._control_mode == "effort":
+            raise NotImplementedError(
+                "Control mode %s is not implemented yet." % self._control_mode
+            )
+        else:
+            raise ValueError("Control mode %s is not known!" % self._control_mode)
+        return gym.spaces.Box(lower_bounds, upper_bounds, dtype=np.float32)
+
+    @property
+    def observation_space(self):
+        """ return the open manipulator's state space for this specific environment.
+        """
+        return gym.spaces.Box(
+            -np.inf, np.inf, shape=self.get_observation().shape, dtype=np.float32
+        )
+
     def set_joints_position(self, joints_angles):
         """Move joints using joint position command publishers.
 
@@ -184,11 +237,100 @@ class OpenManipulatorRosInterface:
             joints_angles (Float64): Move joints with angles.
         """
         self.pub_gripper_position.publish(joints_angles[0])
-        self.pub_gripper_sub_position.publish(joints_angles[1])
-        self.pub_joint1_position.publish(joints_angles[2])
-        self.pub_joint2_position.publish(joints_angles[3])
-        self.pub_joint3_position.publish(joints_angles[4])
-        self.pub_joint4_position.publish(joints_angles[5])
+        self.pub_joint1_position.publish(joints_angles[1])
+        self.pub_joint2_position.publish(joints_angles[2])
+        self.pub_joint3_position.publish(joints_angles[3])
+        self.pub_joint4_position.publish(joints_angles[4])
+
+    def init_robot_pose(self):
+        """Initialize robot gripper and joints position."""
+        self.pub_gripper_position.publish(np.random.uniform(0.0, 0.1))
+        self.pub_joint1_position.publish(np.random.uniform(-0.1, 0.1))
+        self.pub_joint2_position.publish(np.random.uniform(-0.1, 0.1))
+        self.pub_joint3_position.publish(np.random.uniform(-0.1, 0.1))
+        self.pub_joint4_position.publish(np.random.uniform(-0.1, 0.1))
+
+    def _geom_interpolation(self, in_rad, out_rad, in_z, out_z, query):
+        """interpolates along the outer shell of work space, based on z-position.
+
+        must feed the corresponding radius from inner radius.
+        """
+        slope = (out_z - in_z) / (out_rad - in_rad)
+        intercept = in_z
+        return slope * (query - in_rad) + intercept
+
+    def _check_for_success(self):
+        """Check if the agent has succeeded the episode.
+
+        Returns:
+            True when count reaches suc_count, else False.
+        """
+        _dist = self._get_dist()
+        if _dist < self.ros_interface.distance_threshold:
+            self.success_count += 1
+            if self.success_count == suc_count:
+                self.done = True
+                self.success_count = 0
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def _check_for_termination(self):
+        """Check if the agent has reached undesirable state.
+
+        If so, terminate the episode early.
+
+        Returns:
+            True when count reaches term_count, else False.
+        """
+        _ee_pose = self.get_gripper_position()
+
+        rob_rad = np.linalg.norm([_ee_pose[0], _ee_pose[1]])
+        rob_z = _ee_pose[2]
+        if self.joint_positions[0] <= abs(joint_limits["hi"]["j1"] / 2):
+            if rob_rad < inner_rad:
+                self.termination_count += 1
+                rospy.logwarn("OUT OF BOUNDARY : exceeds inner radius limit")
+            elif inner_rad <= rob_rad < outer_rad:
+                upper_z = self._geom_interpolation(
+                    inner_rad, outer_rad, inner_z, outer_z, rob_rad
+                )
+                if rob_z > upper_z:
+                    self.termination_count += 1
+                    rospy.logwarn("OUT OF BOUNDARY : exceeds upper z limit")
+            elif outer_rad <= rob_rad < lower_rad:
+                bevel_z = self._geom_interpolation(
+                    outer_rad, lower_rad, outer_z, lower_z, rob_rad
+                )
+                if rob_z > bevel_z:
+                    self.termination_count += 1
+                    rospy.logwarn("OUT OF BOUNDARY : exceeds bevel z limit")
+            else:
+                self.termination_count += 1
+                rospy.logwarn("OUT OF BOUNDARY : exceeds outer radius limit")
+        else:
+            # joint_1 limit exceeds
+            self.termination_count += 1
+            rospy.logwarn("OUT OF BOUNDARY : joint_1_limit exceeds")
+
+        if self.termination_count == term_count:
+            self.done = True
+            self.termination_count = 0
+            return True
+        else:
+            return False
+
+    def close(self):
+        """Close by rospy shutdown."""
+        rospy.signal_shutdown("done")
+
+
+class OpenManipulatorRosGazeboInterface(RosBaseInterface):
+    def __init__(self):
+        rospy.init_node("OpenManipulatorRosGazeboInterface")
+        super(self, OpenManipulatorReacherEnv).__init__()
 
     def _reset_gazebo_world(self):
         """Initialize randomly the state of robot agent and
@@ -196,15 +338,6 @@ class OpenManipulatorRosInterface:
         """
         self._delete_target_block()
 
-        self.pub_gripper_position.publish(np.random.uniform(0.0, 0.1))
-        self.pub_joint1_position.publish(np.random.uniform(-0.1, 0.1))
-        self.pub_joint2_position.publish(np.random.uniform(-0.1, 0.1))
-        self.pub_joint3_position.publish(np.random.uniform(-0.1, 0.1))
-        self.pub_joint4_position.publish(np.random.uniform(-0.1, 0.1))
-        self._load_target_block()
-
-    def init_robot_pose(self):
-        """Initialize robot girpper and joints position"""
         self.pub_gripper_position.publish(np.random.uniform(0.0, 0.1))
         self.pub_joint1_position.publish(np.random.uniform(-0.1, 0.1))
         self.pub_joint2_position.publish(np.random.uniform(-0.1, 0.1))
@@ -221,15 +354,6 @@ class OpenManipulatorRosInterface:
 
         with open(model_path + "block/model.urdf", "r") as block_file:
             block_xml = block_file.read().replace("\n", "")
-
-        rand_pose = Pose(
-            position=Point(
-                x=np.random.uniform(0.1, 0.15),
-                y=np.random.uniform(0, 50.6),
-                z=np.random.uniform(0.0, 0.1),
-            ),
-            orientation=overhead_orientation,
-        )
 
         rospy.wait_for_service("/gazebo/spawn_urdf_model")
 
@@ -252,84 +376,8 @@ class OpenManipulatorRosInterface:
         except rospy.ServiceException as e:
             rospy.loginfo("Delete Model service call failed: {0}".format(e))
 
-    def _geom_interpolation(self, in_rad, out_rad, in_z, out_z, query):
-        """interpolates along the outer shell of work space, based on z-position.
 
-        must feed the corresponding radius from inner radius.
-        """
-        slope = (out_z - in_z) / (out_rad - in_rad)
-        intercept = in_z
-        return slope * (query - in_rad) + intercept
-
-    def _check_for_success(self):
-        """Check if the agent has succeeded the episode.
-
-        Returns:
-            True when count reaches SUC_COUNT, else False.
-        """
-        _dist = self._get_dist()
-        if _dist < self.ros_interface.distance_threshold:
-            self.success_count += 1
-            if self.success_count == SUC_COUNT:
-                self.done = True
-                self.success_count = 0
-                return True
-            else:
-                return False
-        else:
-            return False
-
-    def _check_for_termination(self):
-        """Check if the agent has reached undesirable state.
-
-        If so, terminate the episode early.
-
-        Returns:
-            True when count reaches TERM_COUNT, else False.
-        """
-        _ee_pose = self.get_gripper_position()
-
-        inner_rad = 0.134
-        outer_rad = 0.3
-        lower_rad = 0.384
-        inner_z = 0.321
-        outer_z = 0.250
-        lower_z = 0.116
-        rob_rad = np.linalg.norm([_ee_pose[0], _ee_pose[1]])
-        rob_z = _ee_pose[2]
-        if self.joint_positions[0] <= abs(joint_limits['hi']['j1'] / 2):
-            if rob_rad < inner_rad:
-                self.termination_count += 1
-                rospy.logwarn('OUT OF BOUNDARY : exceeds inner radius limit')
-            elif inner_rad <= rob_rad < outer_rad:
-                upper_z = self._geom_interpolation(inner_rad, outer_rad,
-                                                   inner_z, outer_z,
-                                                   rob_rad)
-                if rob_z > upper_z:
-                    self.termination_count += 1
-                    rospy.logwarn('OUT OF BOUNDARY : exceeds upper z limit')
-            elif outer_rad <= rob_rad < lower_rad:
-                bevel_z = self._geom_interpolation(outer_rad, lower_rad,
-                                                   outer_z, lower_z,
-                                                   rob_rad)
-                if rob_z > bevel_z:
-                    self.termination_count += 1
-                    rospy.logwarn('OUT OF BOUNDARY : exceeds bevel z limit')
-            else:
-                self.termination_count += 1
-                rospy.logwarn('OUT OF BOUNDARY : exceeds outer radius limit')
-        else:
-            # joint_1 limit exceeds
-            self.termination_count += 1
-            rospy.logwarn('OUT OF BOUNDARY : joint_1_limit exceeds')
-
-        if self.termination_count == TERM_COUNT:
-            self.done = True
-            self.termination_count = 0
-            return True
-        else:
-            return False
-
-    def close(self):
-        """Close by rospy shutdown."""
-        rospy.signal_shutdown("done")
+class OpenManipulatorRosRealInterface(RosBaseInterface):
+    def __init__(self):
+        rospy.init_node("OpenManipulatorRosRealInterface")
+        super(self, OpenManipulatorReacherEnv).__init__()
