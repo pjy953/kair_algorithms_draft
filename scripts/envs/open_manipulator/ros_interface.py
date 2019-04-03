@@ -19,8 +19,6 @@ class OpenManipulatorRosBaseInterface(object):
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        rospy.init_node("OpenManipulatorRosInterface")
-
         self.termination_count = 0
         self.success_count = 0
 
@@ -30,8 +28,8 @@ class OpenManipulatorRosBaseInterface(object):
         self.joint_efforts = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.right_endpoint_position = [0, 0, 0]
 
-        self.publisher_node()
-        self.subscriber_node()
+        self.publish_node()
+        self.subscribe_node()
         self.init_robot_pose()
 
         rospy.on_shutdown(self._delete_target_block)
@@ -190,14 +188,14 @@ class OpenManipulatorRosBaseInterface(object):
     def action_space(self):
         """ return the open manipulator's action space for this specific environment.
         """
-        if self._control_mode == "position":
+        if control_mode == "position":
             lower_bounds = np.array(
                 [
                     joint_limits["lo"]["j1"],
                     joint_limits["lo"]["j2"],
                     joint_limits["lo"]["j3"],
                     joint_limits["lo"]["j4"],
-                    joint_limits["lo"]["grip"],
+                    joint_limits["hi"]["grip"],
                 ]
             )
             upper_bounds = np.array(
@@ -206,28 +204,29 @@ class OpenManipulatorRosBaseInterface(object):
                     joint_limits["hi"]["j2"],
                     joint_limits["hi"]["j3"],
                     joint_limits["hi"]["j4"],
-                    joint_limits["hi"]["grip"],
+                    joint_limits["lo"]["grip"],
                 ]
             )
-        elif self._control_mode == "velocity":
+        elif control_mode == "velocity":
             raise NotImplementedError(
-                "Control mode %s is not implemented yet." % self._control_mode
+                "Control mode %s is not implemented yet." % control_mode
             )
 
-        elif self._control_mode == "effort":
+        elif control_mode == "effort":
             raise NotImplementedError(
-                "Control mode %s is not implemented yet." % self._control_mode
+                "Control mode %s is not implemented yet." % control_mode
             )
         else:
-            raise ValueError("Control mode %s is not known!" % self._control_mode)
-        return gym.spaces.Box(lower_bounds, upper_bounds, dtype=np.float32)
+            raise ValueError("Control mode %s is not known!" % control_mode)
+        print(lower_bounds, upper_bounds, action_dim)
+        return gym.spaces.Box(low=lower_bounds, high=upper_bounds, dtype=np.float32)
 
     @property
     def observation_space(self):
         """ return the open manipulator's state space for this specific environment.
         """
         return gym.spaces.Box(
-            -np.inf, np.inf, shape=self.get_observation().shape, dtype=np.float32
+            low=-np.inf, high=np.inf, shape=observation_dim, dtype=np.float32
         )
 
     def set_joints_position(self, joints_angles):
@@ -327,10 +326,10 @@ class OpenManipulatorRosBaseInterface(object):
         rospy.signal_shutdown("done")
 
 
-class OpenManipulatorRosGazeboInterface(RosBaseInterface):
+class OpenManipulatorRosGazeboInterface(OpenManipulatorRosBaseInterface):
     def __init__(self):
         rospy.init_node("OpenManipulatorRosGazeboInterface")
-        super(self, OpenManipulatorReacherEnv).__init__()
+        super(OpenManipulatorRosGazeboInterface, self).__init__()
 
     def _reset_gazebo_world(self):
         """Initialize randomly the state of robot agent and
@@ -377,7 +376,7 @@ class OpenManipulatorRosGazeboInterface(RosBaseInterface):
             rospy.loginfo("Delete Model service call failed: {0}".format(e))
 
 
-class OpenManipulatorRosRealInterface(RosBaseInterface):
+class OpenManipulatorRosRealInterface(OpenManipulatorRosBaseInterface):
     def __init__(self):
         rospy.init_node("OpenManipulatorRosRealInterface")
-        super(self, OpenManipulatorReacherEnv).__init__()
+        super(OpenManipulatorRosRealInterface, self).__init__()
