@@ -18,7 +18,7 @@ class OpenManipulatorReacherEnv(gym.Env):
     def __init__(self, cfg):
         self.cfg = cfg
         self.mode = self.cfg.mode
-        self.max_steps = self.cfg.max_steps
+        self._max_episode_steps = self.cfg.max_episode_steps
         self.reward_rescale_ratio = self.cfg.reward_rescale_ratio
         self.reward_func = self.cfg.reward_func
 
@@ -62,31 +62,31 @@ class OpenManipulatorReacherEnv(gym.Env):
         self.elapsed = time.time() - self.prev_tic
         self.done = False
 
-        if self.episode_steps == self.max_steps:
+        if self.episode_steps == self._max_episode_steps:
             self.done = True
             self.episode_steps = 0
 
         act = action.flatten().tolist()
         self.ros_interface.set_joints_position(act)
 
-        if not self.model == "sim":
+        if not self.mode == "sim":
             self.reward = self._compute_reward()
             if self._check_for_termination():
-                rospy.logwarn("Terminates current Episode : OUT OF BOUNDARY")
+                print("Terminates current Episode : OUT OF BOUNDARY")
             elif self._check_for_success():
-                rospy.logwarn("Succeeded current Episode")
-        _joint_pos, _joint_vels, _joint_effos = self.ros_interface.get_joints_states()
+                print("Succeeded current Episode")
+        obs = self.ros_interface.get_observation()
 
         if np.mod(self.episode_steps, 10) == 0:
-            rospy.logwarn("PER STEP ELAPSED : ", self.elapsed)
-            rospy.logwarn("SPARSE REWARD : ", self.reward_rescale * self.reward)
-            rospy.logwarn("CURRNET EE POSITINO: ", self.ros_interface.gripper_position)
-            rospy.logwarn("ACIONS: ", act)
+            print("PER STEP ELAPSED : ", self.elapsed)
+            print("SPARSE REWARD : ", self.reward_rescale_ratio * self.reward)
+            print("CURRNET EE POSITINO: ", self.ros_interface.gripper_position)
+            print("ACIONS: ", act)
+            print("obs", obs)
 
-        obs = np.array([_joint_pos, _joint_vels, _joint_effos])
         self.episode_steps += 1
 
-        return obs, self.reward_rescale * self.reward, self.done
+        return obs, self.reward_rescale_ratio * self.reward, self.done, None
 
     def reset(self):
         """Attempt to reset the simulator.
@@ -163,3 +163,6 @@ class OpenManipulatorReacherEnv(gym.Env):
         end_effector_pose = np.array(self.ros_interface.get_gripper_position())
 
         return np.linalg.norm(end_effector_pose - self._obj_pose)
+    
+    def render(self):
+        pass

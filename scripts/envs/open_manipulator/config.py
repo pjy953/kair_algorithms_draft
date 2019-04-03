@@ -30,8 +30,8 @@ joint_limits = {
 }
 
 # Global variables
-action_dim = 3  # Cartesian
-observation_dim = 4
+action_dim = 5  # Cartesian
+observation_dim = (25, )
 
 # terminal condition
 inner_rad = 0.134
@@ -51,7 +51,10 @@ rand_pose = Pose(
     orientation=overhead_orientation,
 )
 
+mode = 'sim'
+max_episode_steps = 100
 distance_threshold = 0.1
 
 reward_rescale_ratio = 1.0
 reward_func = "sparse"
+control_mode = "position"
