@@ -280,8 +280,8 @@ class OpenManipulatorRosBaseInterface(object):
         Returns:
             True when count reaches suc_count, else False.
         """
-        _dist = self._get_dist()
-        if _dist < self.distance_threshold:
+        dist = self.get_dist()
+        if dist < self.distance_threshold:
             self.success_count += 1
             if self.success_count == suc_count:
                 self.done = True
