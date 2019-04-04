@@ -9,7 +9,7 @@ import numpy as np
 import rospkg  # noqa
 import rospy  # noqa
 from config import *  # noqa
-from gazebo_msgs.srv import DeleteModel, SpawnModel, GetModelState
+from gazebo_msgs.srv import DeleteModel, GetModelState, SpawnModel
 from geometry_msgs.msg import Pose
 from open_manipulator_msgs.msg import KinematicsPose, OpenManipulatorState
 from sensor_msgs.msg import JointState
@@ -37,7 +37,7 @@ class OpenManipulatorRosBaseInterface(object):
         self.subscribe_node()
         self.init_robot_pose()
 
-        rospy.on_shutdown(self._delete_target_block)
+        rospy.on_shutdown(self.delete_target_block)
 
     def publish_node(self):
         self.pub_gripper_position = rospy.Publisher(
@@ -343,9 +343,9 @@ class OpenManipulatorRosBaseInterface(object):
 
 
 class OpenManipulatorRosGazeboInterface(OpenManipulatorRosBaseInterface):
-    def __init__(self):
+    def __init__(self, cfg):
         rospy.init_node("OpenManipulatorRosGazeboInterface")
-        super(OpenManipulatorRosGazeboInterface, self).__init__()
+        super(OpenManipulatorRosGazeboInterface, self).__init__(cfg)
 
     def reset_gazebo_world(self, block_pose=None):
         """Initialize randomly the state of robot agent and
@@ -432,6 +432,6 @@ class OpenManipulatorRosGazeboInterface(OpenManipulatorRosBaseInterface):
 
 
 class OpenManipulatorRosRealInterface(OpenManipulatorRosBaseInterface):
-    def __init__(self):
+    def __init__(self, cfg):
         rospy.init_node("OpenManipulatorRosRealInterface")
-        super(OpenManipulatorRosRealInterface, self).__init__()
+        super(OpenManipulatorRosRealInterface, self).__init__(cfg)

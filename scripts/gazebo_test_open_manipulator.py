@@ -22,7 +22,6 @@ cfg = config
 def test_reset():
     env = OpenManipulatorReacherEnv(cfg)
     _ = env.reset()
-    # assert obs in specific boundary
 
 
 def test_forward():
@@ -65,8 +64,6 @@ def test_rotate():
         _ = task_space_srv("arm", _qpose, 2.0)
     except rospy.ServiceException, e:
         rospy.loginfo("Path planning service call failed: {0}".format(e))
-    # define actions
-    # assert obs in specific boundary
 
 
 def test_block_loc():
@@ -79,9 +76,7 @@ def test_block_loc():
         b_pose.orientation = overhead_orientation
         env.ros_interface.set_target_block()
         rospy.sleep(2.0)
-        env.ros_interface._delete_target_block()
-    # block generation code
-    # assert block in specific boundary (gripper's movable area)
+        env.ros_interface.delete_target_block()
 
 
 def test_achieve_goal():
@@ -108,12 +103,10 @@ def test_achieve_goal():
         except rospy.ServiceException, e:
             rospy.loginfo("Path planning service call failed: {0}".format(e))
         rospy.sleep(5.0)
-        env.ros_interface._delete_target_block()
+        env.ros_interface.delete_target_block()
 
 
 def test_workspace_limit():
-    """ TODO: add static block
-    """
     env = OpenManipulatorReacherEnv(cfg)
     for iter in range(100):
         _polar_rad = np.random.uniform(0.134, 0.32)
@@ -140,7 +133,7 @@ def test_workspace_limit():
             rospy.loginfo("Path planning service call failed: {0}".format(e))
         rospy.sleep(3.0)
         env.ros_interface.check_for_termination()
-        env.ros_interface._delete_target_block()
+        env.ros_interface.delete_target_block()
 
 
 if __name__ == '__main__':
