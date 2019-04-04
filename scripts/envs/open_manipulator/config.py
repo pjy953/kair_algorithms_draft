@@ -42,8 +42,8 @@ outer_z = 0.250
 lower_z = 0.116
 
 # block generation condition
-block_pose = Pose(position=Point(x=0.6725, y=0.1265, z=0.7825)),
-block_reference_frame = "world",
+block_pose = Pose(position=Point(x=0.6725, y=0.1265, z=0.7825))
+block_reference_frame = "world"
 
 mode = 'sim'
 max_episode_steps = 100
