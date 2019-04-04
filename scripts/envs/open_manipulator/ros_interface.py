@@ -7,7 +7,7 @@ import numpy as np
 
 import rospkg  # noqa
 import rospy  # noqa
-from config import *
+from config import *  # noqa
 from gazebo_msgs.srv import DeleteModel, SpawnModel, GetModelState
 from open_manipulator_msgs.msg import KinematicsPose, OpenManipulatorState
 from sensor_msgs.msg import JointState
@@ -135,6 +135,17 @@ class OpenManipulatorRosBaseInterface(object):
         # "ACTUATOR_ENABLE" / "ACTUATOR_DISABLE"
         self.actuator_state = msg.open_manipulator_actuator_state
 
+    def check_robot_moving(self):
+        """Check if robot has reached its initial pose.
+
+        Returns:
+            True if not stopped.
+        """
+        while not rospy.is_shutdown():
+            if self.moving_state == "STOPPED":
+                break
+        return True
+
     def get_joints_states(self):
         """Returns current joints states of robot including position,
         velocity, effort.
@@ -258,7 +269,7 @@ class OpenManipulatorRosBaseInterface(object):
         intercept = in_z
         return slope * (query - in_rad) + intercept
 
-    def _check_for_success(self):
+    def check_for_success(self):
         """Check if the agent has succeeded the episode.
 
         Returns:
@@ -276,7 +287,7 @@ class OpenManipulatorRosBaseInterface(object):
         else:
             return False
 
-    def _check_for_termination(self):
+    def check_for_termination(self):
         """Check if the agent has reached undesirable state.
 
         If so, terminate the episode early.
@@ -331,7 +342,7 @@ class OpenManipulatorRosGazeboInterface(OpenManipulatorRosBaseInterface):
         rospy.init_node("OpenManipulatorRosGazeboInterface")
         super(OpenManipulatorRosGazeboInterface, self).__init__()
 
-    def _reset_gazebo_world(self):
+    def reset_gazebo_world(self):
         """Initialize randomly the state of robot agent and
         surrounding envs (including target obj.).
         """
@@ -375,7 +386,7 @@ class OpenManipulatorRosGazeboInterface(OpenManipulatorRosBaseInterface):
         except rospy.ServiceException as e:
             rospy.loginfo("Delete Model service call failed: {0}".format(e))
 
-    def _get_dist(self):
+    def get_dist(self):
         """Get distance between end effector pose and object pose.
 
         Returns:
