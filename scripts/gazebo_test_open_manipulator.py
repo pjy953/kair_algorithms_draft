@@ -77,9 +77,9 @@ def test_block_loc():
         b_pose.position.y = np.random.uniform(-0.2, 0.2)
         b_pose.position.z = 0.00
         b_pose.orientation = overhead_orientation
-        env._load_target_block(block_pose=b_pose)
+        env.ros_interface._load_target_block(block_pose=b_pose)
         rospy.sleep(2.0)
-        env._delete_target_block()
+        env.ros_interface._delete_target_block()
     # block generation code
     # assert block in specific boundary (gripper's movable area)
 
@@ -92,7 +92,7 @@ def test_achieve_goal():
         b_pose.position.y = np.random.uniform(-0.4, 0.4)
         b_pose.position.z = 0.00
         b_pose.orientation = overhead_orientation
-        env._load_target_block(block_pose=b_pose)
+        env.ros_interface._load_target_block(block_pose=b_pose)
         r_pose = Pose()
         r_pose.position = b_pose.position
         r_pose.position.z = 0.08
@@ -107,7 +107,7 @@ def test_achieve_goal():
         except rospy.ServiceException, e:
             rospy.loginfo("Path planning service call failed: {0}".format(e))
         rospy.sleep(5.0)
-        env._delete_target_block()
+        env.ros_interface._delete_target_block()
 
 
 def test_workspace_limit():
@@ -123,7 +123,7 @@ def test_workspace_limit():
         b_pose.position.y = _polar_rad * sin(_polar_theta)
         b_pose.position.z = np.random.uniform(0.05, 0.28)
         b_pose.orientation = overhead_orientation
-        env._load_target_block(block_pose=b_pose)
+        env.ros_interface._load_target_block(block_pose=b_pose)
         r_pose = Pose()
         r_pose.position = b_pose.position
         forward_pose = KinematicsPose()
@@ -137,8 +137,8 @@ def test_workspace_limit():
         except rospy.ServiceException, e:
             rospy.loginfo("Path planning service call failed: {0}".format(e))
         rospy.sleep(3.0)
-        env._check_for_termination()
-        env._delete_target_block()
+        env.ros_interface.check_for_termination()
+        env.ros_interface._delete_target_block()
     # define actions
     # define goal
     # assert gripper reach goal
