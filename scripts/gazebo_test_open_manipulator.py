@@ -77,7 +77,7 @@ def test_block_loc():
         b_pose.position.y = np.random.uniform(-0.2, 0.2)
         b_pose.position.z = 0.00
         b_pose.orientation = overhead_orientation
-        env.ros_interface._load_target_block()
+        env.ros_interface.set_target_block()
         rospy.sleep(2.0)
         env.ros_interface._delete_target_block()
     # block generation code
@@ -87,14 +87,15 @@ def test_block_loc():
 def test_achieve_goal():
     env = OpenManipulatorReacherEnv(cfg)
     for iter in range(20):
-        b_pose = Pose()
-        b_pose.position.x = np.random.uniform(0.25, .6)
-        b_pose.position.y = np.random.uniform(-0.4, 0.4)
-        b_pose.position.z = 0.00
-        b_pose.orientation = overhead_orientation
-        env.ros_interface._load_target_block()
+        block_pose = Pose()
+        block_pose.position.x = np.random.uniform(0.25, .6)
+        block_pose.position.y = np.random.uniform(-0.4, 0.4)
+        block_pose.position.z = 0.00
+        block_pose.orientation = overhead_orientation
+        env.ros_interface.set_target_block(block_pose)
+
         r_pose = Pose()
-        r_pose.position = b_pose.position
+        r_pose.position = block_pose.position
         r_pose.position.z = 0.08
         forward_pose = KinematicsPose()
         forward_pose.pose = r_pose
@@ -118,14 +119,15 @@ def test_workspace_limit():
         _polar_rad = np.random.uniform(0.134, 0.32)
         _polar_theta = np.random.uniform(-pi * 0.7 / 4, pi * 0.7 / 4)
 
-        b_pose = Pose()
-        b_pose.position.x = _polar_rad * cos(_polar_theta)
-        b_pose.position.y = _polar_rad * sin(_polar_theta)
-        b_pose.position.z = np.random.uniform(0.05, 0.28)
-        b_pose.orientation = overhead_orientation
-        env.ros_interface._load_target_block()
+        block_pose = Pose()
+        block_pose.position.x = _polar_rad * cos(_polar_theta)
+        block_pose.position.y = _polar_rad * sin(_polar_theta)
+        block_pose.position.z = np.random.uniform(0.05, 0.28)
+        block_pose.orientation = overhead_orientation
+        env.ros_interface.set_target_block(block_pose)
+
         r_pose = Pose()
-        r_pose.position = b_pose.position
+        r_pose.position = block_pose.position
         forward_pose = KinematicsPose()
         forward_pose.pose = r_pose
         forward_pose.max_accelerations_scaling_factor = 0.0
@@ -139,9 +141,6 @@ def test_workspace_limit():
         rospy.sleep(3.0)
         env.ros_interface.check_for_termination()
         env.ros_interface._delete_target_block()
-    # define actions
-    # define goal
-    # assert gripper reach goal
 
 
 if __name__ == '__main__':

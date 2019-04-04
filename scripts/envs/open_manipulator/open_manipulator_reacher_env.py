@@ -13,14 +13,14 @@ from ros_interface import (
 class OpenManipulatorReacherEnv(gym.Env):
     def __init__(self, cfg):
         self.cfg = cfg
-        self.mode = self.cfg.mode
+        self.env_mode = self.cfg.env_mode
         self._max_episode_steps = self.cfg.max_episode_steps
         self.reward_rescale_ratio = self.cfg.reward_rescale_ratio
         self.reward_func = self.cfg.reward_func
 
-        assert self.mode in ["sim", "real"]
-        if self.mode == "sim":
-            self.ros_interface = OpenManipulatorRosGazeboInterface()
+        assert self.env_mode in ["sim", "real"]
+        if self.env_mode == "sim":
+            self.ros_interface = OpenManipulatorRosGazeboInterface(self.cfg)
         else:
             self.ros_interface = OpenManipulatorRosRealInterface()
 
@@ -59,8 +59,8 @@ class OpenManipulatorReacherEnv(gym.Env):
         act = action.flatten().tolist()
         self.ros_interface.set_joints_position(act)
 
-        if self.mode == "sim":
-            self.reward = self._compute_reward()
+        if self.env_mode == "sim":
+            self.reward = self.compute_reward()
             if self.ros_interface.check_for_termination():
                 print("Terminates current Episode : OUT OF BOUNDARY")
             elif self.ros_interface.check_for_success():
@@ -91,7 +91,7 @@ class OpenManipulatorReacherEnv(gym.Env):
 
         return obs
 
-    def _compute_reward(self):
+    def compute_reward(self):
         """Computes shaped/sparse reward for each episode.
 
         Returns:
