@@ -5,7 +5,7 @@ from math import cos, pi, sin
 import numpy as np
 
 import rospy
-from envs.open_manipulator_reacher_env import OpenManipulatorReacherEnv
+from envs.open_manipulator import OpenManipulatorReacherEnv, config
 from geometry_msgs.msg import Pose, Quaternion
 from open_manipulator_msgs.msg import JointPosition, KinematicsPose
 from open_manipulator_msgs.srv import SetJointPosition, SetKinematicsPose
@@ -16,15 +16,17 @@ overhead_orientation = Quaternion(
     z=-0.00177030764765,
     w=0.00253311793936)
 
+cfg = config
+
 
 def test_reset():
-    env = OpenManipulatorEnv()
+    env = OpenManipulatorReacherEnv(cfg)
     _ = env.reset()
     # assert obs in specific boundary
 
 
 def test_forward():
-    env = OpenManipulatorEnv()
+    env = OpenManipulatorReacherEnv(cfg)
     _ = env.reset()
     _pose = Pose()
     _pose.position.x = 0.4
@@ -68,7 +70,7 @@ def test_rotate():
 
 
 def test_block_loc():
-    env = OpenManipulatorEnv()
+    env = OpenManipulatorReacherEnv(cfg)
     for iter in range(20):
         b_pose = Pose()
         b_pose.position.x = np.random.uniform(0.15, .20)
@@ -83,7 +85,7 @@ def test_block_loc():
 
 
 def test_achieve_goal():
-    env = OpenManipulatorEnv()
+    env = OpenManipulatorReacherEnv(cfg)
     for iter in range(20):
         b_pose = Pose()
         b_pose.position.x = np.random.uniform(0.25, .6)
@@ -111,7 +113,7 @@ def test_achieve_goal():
 def test_workspace_limit():
     """ TODO: add static block
     """
-    env = OpenManipulatorEnv()
+    env = OpenManipulatorReacherEnv(cfg)
     for iter in range(100):
         _polar_rad = np.random.uniform(0.134, 0.32)
         _polar_theta = np.random.uniform(-pi * 0.7 / 4, pi * 0.7 / 4)

@@ -1,13 +1,9 @@
-# ! usr/bin/env python
-
-import time
+#! usr/bin/env python
 
 import gym
 import numpy as np
 from gym.utils import seeding
 
-import rospy
-from gazebo_msgs.srv import GetModelState
 from ros_interface import (
     OpenManipulatorRosGazeboInterface,
     OpenManipulatorRosRealInterface,
@@ -65,9 +61,9 @@ class OpenManipulatorReacherEnv(gym.Env):
 
         if self.mode == "sim":
             self.reward = self._compute_reward()
-            if self.ros_interface._check_for_termination():
+            if self.ros_interface.check_for_termination():
                 print("Terminates current Episode : OUT OF BOUNDARY")
-            elif self.ros_interface._check_for_success():
+            elif self.ros_interface.check_for_success():
                 print("Succeeded current Episode")
         obs = self.ros_interface.get_observation()
 
@@ -90,21 +86,10 @@ class OpenManipulatorReacherEnv(gym.Env):
         Returns:
             obs (array) : Array of joint position, joint velocity, joint effort
         """
-        self.ros_interface._reset_gazebo_world()
+        self.ros_interface.reset_gazebo_world()
         obs = self.ros_interface.get_observation()
 
         return obs
-
-    def _check_robot_moving(self):
-        """Check if robot has reached its initial pose.
-
-        Returns:
-            True if not stopped.
-        """
-        while not rospy.is_shutdown():
-            if self.moving_state == "STOPPED":
-                break
-        return True
 
     def _compute_reward(self):
         """Computes shaped/sparse reward for each episode.
@@ -112,7 +97,7 @@ class OpenManipulatorReacherEnv(gym.Env):
         Returns:
             reward (Float64) : L2 distance of current distance and squared sum velocity.
         """
-        cur_dist = self.ros_interface._get_dist()
+        cur_dist = self.ros_interface.get_dist()
         if self.reward_func == "sparse":
             # 1 for success else 0
             reward = cur_dist <= self.ros_interface.distance_threshold
