@@ -77,7 +77,7 @@ def test_block_loc():
         b_pose.position.y = np.random.uniform(-0.2, 0.2)
         b_pose.position.z = 0.00
         b_pose.orientation = overhead_orientation
-        env.ros_interface._load_target_block(block_pose=b_pose)
+        env.ros_interface._load_target_block()
         rospy.sleep(2.0)
         env.ros_interface._delete_target_block()
     # block generation code
@@ -92,7 +92,7 @@ def test_achieve_goal():
         b_pose.position.y = np.random.uniform(-0.4, 0.4)
         b_pose.position.z = 0.00
         b_pose.orientation = overhead_orientation
-        env.ros_interface._load_target_block(block_pose=b_pose)
+        env.ros_interface._load_target_block()
         r_pose = Pose()
         r_pose.position = b_pose.position
         r_pose.position.z = 0.08
@@ -123,7 +123,7 @@ def test_workspace_limit():
         b_pose.position.y = _polar_rad * sin(_polar_theta)
         b_pose.position.z = np.random.uniform(0.05, 0.28)
         b_pose.orientation = overhead_orientation
-        env.ros_interface._load_target_block(block_pose=b_pose)
+        env.ros_interface._load_target_block()
         r_pose = Pose()
         r_pose.position = b_pose.position
         forward_pose = KinematicsPose()

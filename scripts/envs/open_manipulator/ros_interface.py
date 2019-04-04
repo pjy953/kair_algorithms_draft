@@ -369,7 +369,7 @@ class OpenManipulatorRosGazeboInterface(OpenManipulatorRosBaseInterface):
 
         try:
             spawn_urdf = rospy.ServiceProxy("/gazebo/spawn_urdf_model", SpawnModel)
-            spawn_urdf("block", block_xml, "/", rand_pose, block_reference_frame)
+            spawn_urdf("block", block_xml, "/", block_pose, block_reference_frame)
         except rospy.ServiceException as e:
             rospy.logerr("Spawn URDF service call failed: {0}".format(e))
 

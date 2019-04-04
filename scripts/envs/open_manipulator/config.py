@@ -42,14 +42,8 @@ outer_z = 0.250
 lower_z = 0.116
 
 # block generation condition
-rand_pose = Pose(
-    position=Point(
-        x=np.random.uniform(0.1, 0.15),
-        y=np.random.uniform(0, 50.6),
-        z=np.random.uniform(0.0, 0.1),
-    ),
-    orientation=overhead_orientation,
-)
+block_pose = Pose(position=Point(x=0.6725, y=0.1265, z=0.7825)),
+block_reference_frame = "world",
 
 mode = 'sim'
 max_episode_steps = 100
