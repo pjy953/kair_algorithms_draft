@@ -1,6 +1,7 @@
 # ! usr/bin/env python
 
 from abc import ABCMeta
+from math import cos, sin
 
 import gym
 import numpy as np
@@ -9,6 +10,7 @@ import rospkg  # noqa
 import rospy  # noqa
 from config import *  # noqa
 from gazebo_msgs.srv import DeleteModel, SpawnModel, GetModelState
+from geometry_msgs.msg import Pose
 from open_manipulator_msgs.msg import KinematicsPose, OpenManipulatorState
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
@@ -18,15 +20,18 @@ class OpenManipulatorRosBaseInterface(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self):
-        self.termination_count = 0
-        self.success_count = 0
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.train_mode = self.cfg.train_mode
 
         self.joint_speeds = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_positions = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_velocities = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.joint_efforts = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.right_endpoint_position = [0, 0, 0]
+
+        self.termination_count = 0
+        self.success_count = 0
 
         self.publish_node()
         self.subscribe_node()
@@ -342,21 +347,33 @@ class OpenManipulatorRosGazeboInterface(OpenManipulatorRosBaseInterface):
         rospy.init_node("OpenManipulatorRosGazeboInterface")
         super(OpenManipulatorRosGazeboInterface, self).__init__()
 
-    def reset_gazebo_world(self):
+    def reset_gazebo_world(self, block_pose=None):
         """Initialize randomly the state of robot agent and
         surrounding envs (including target obj.).
         """
-        self._delete_target_block()
+        if block_pose is not None:
+            assert self.train_mode is True
+
+        self.delete_target_block()
 
         self.pub_gripper_position.publish(np.random.uniform(0.0, 0.1))
         self.pub_joint1_position.publish(np.random.uniform(-0.1, 0.1))
         self.pub_joint2_position.publish(np.random.uniform(-0.1, 0.1))
         self.pub_joint3_position.publish(np.random.uniform(-0.1, 0.1))
         self.pub_joint4_position.publish(np.random.uniform(-0.1, 0.1))
-        self._load_target_block()
 
-    def _load_target_block(self):
-        """Load target block Gazebo model"""
+        self.set_target_block(block_pose)
+
+    def set_target_block(self, block_pose=None):
+        """Set target block Gazebo model"""
+        # random generated blocks for train
+        if block_pose is None:
+            block_pose = Pose()
+            block_pose.position.x = polar_rad * cos(polar_theta)
+            block_pose.position.y = polar_rad * sin(polar_theta)
+            block_pose.position.z = np.random.uniform(0.05, 0.28)
+            block_pose.orientation = overhead_orientation
+
         block_reference_frame = "world"
         model_path = rospkg.RosPack().get_path("kair_algorithms") + "/urdf/"
 
@@ -373,7 +390,7 @@ class OpenManipulatorRosGazeboInterface(OpenManipulatorRosBaseInterface):
         except rospy.ServiceException as e:
             rospy.logerr("Spawn URDF service call failed: {0}".format(e))
 
-    def _delete_target_block(self):
+    def delete_target_block(self):
         """This will be called on ROS Exit, deleting Gazebo models.
 
         Do not wait for the Gazebo Delete Model service, since
