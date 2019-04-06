@@ -211,7 +211,7 @@ class OpenManipulatorRosBaseInterface(object):
                     joint_limits["lo"]["j2"],
                     joint_limits["lo"]["j3"],
                     joint_limits["lo"]["j4"],
-                    joint_limits["hi"]["grip"],
+                    joint_limits["lo"]["grip"],
                 ]
             )
             upper_bounds = np.array(
@@ -220,7 +220,7 @@ class OpenManipulatorRosBaseInterface(object):
                     joint_limits["hi"]["j2"],
                     joint_limits["hi"]["j3"],
                     joint_limits["hi"]["j4"],
-                    joint_limits["lo"]["grip"],
+                    joint_limits["hi"]["grip"],
                 ]
             )
         elif control_mode == "velocity":

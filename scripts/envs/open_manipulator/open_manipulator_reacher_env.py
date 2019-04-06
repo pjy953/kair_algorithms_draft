@@ -13,6 +13,7 @@ from ros_interface import (
 class OpenManipulatorReacherEnv(gym.Env):
     def __init__(self, cfg):
         self.cfg = cfg
+        self.env_name = self.cfg.env_name
         self.env_mode = self.cfg.env_mode
         self._max_episode_steps = self.cfg.max_episode_steps
         self.reward_rescale_ratio = self.cfg.reward_rescale_ratio
