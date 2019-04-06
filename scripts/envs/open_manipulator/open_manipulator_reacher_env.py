@@ -103,8 +103,8 @@ class OpenManipulatorReacherEnv(gym.Env):
             reward = cur_dist <= self.ros_interface.distance_threshold
             reward = reward.astype(np.float32)
         elif self.reward_func == "l2":
-            # -L2 distance
-            reward = 1 / cur_dist
+            # - L2 distance
+            reward = - cur_dist
         else:
             raise ValueError
 
