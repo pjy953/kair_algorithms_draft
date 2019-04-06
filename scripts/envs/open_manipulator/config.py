@@ -5,6 +5,7 @@ from geometry_msgs.msg import Point, Pose, Quaternion
 
 
 # Global variables
+env_name = "OpenManipulatorReacher"
 term_count = 10
 suc_count = 10
 
