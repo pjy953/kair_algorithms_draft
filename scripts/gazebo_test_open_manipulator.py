@@ -3,7 +3,7 @@
 from math import cos, pi, sin
 
 import numpy as np
-from config.env import open_manipulator
+from config.environment import open_manipulator
 
 import rospy
 from envs.open_manipulator import OpenManipulatorReacherEnv
