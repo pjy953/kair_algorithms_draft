@@ -5,13 +5,8 @@ from math import cos, sin
 
 import gym
 import numpy as np
-<<<<<<< HEAD
 import rospkg  # noqa
 
-=======
-
-import rospkg  # noqa
->>>>>>> a7e00fe21da638552ec615d39ba50a1d4d1e0d00
 import rospy  # noqa
 from gazebo_msgs.srv import DeleteModel, GetModelState, SpawnModel
 from geometry_msgs.msg import Pose
@@ -308,11 +303,7 @@ class OpenManipulatorRosBaseInterface(object):
         Returns:
             True when count reaches term_count, else False.
         """
-<<<<<<< HEAD
         _ee_pose = self._gripper_position
-=======
-        _ee_pose = self.get_gripper_position()
->>>>>>> a7e00fe21da638552ec615d39ba50a1d4d1e0d00
 
         inner_rad, outer_rad, lower_rad, inner_z, outer_z, lower_z, term_count = (
             self.cfg["INNER_RADIAN"],
@@ -392,13 +383,8 @@ class OpenManipulatorRosGazeboInterface(OpenManipulatorRosBaseInterface):
         # random generated blocks for train
         if block_pose is None:
             polar_rad, polar_theta, overhead_orientation = (
-<<<<<<< HEAD
                 np.random.uniform(*self.cfg["POLAR_RADIAN_BOUNDARY"]),
                 np.random.uniform(*self.cfg["POLAR_THETA_BOUNDARY"]),
-=======
-                np.random.uniform(self.cfg["POLAR_RADIAN_BOUNDARY"]),
-                np.random.uniform(self.cfg["POLAR_THETA_BOUNDARY"]),
->>>>>>> a7e00fe21da638552ec615d39ba50a1d4d1e0d00
                 self.cfg["OVERHEAD_ORIENTATION"],
             )
 
@@ -458,11 +444,7 @@ class OpenManipulatorRosGazeboInterface(OpenManipulatorRosBaseInterface):
             rospy.logerr("Spawn URDF service call failed: {0}".format(e))
 
         # FK state of robot
-<<<<<<< HEAD
         end_effector_pose = np.array(self._gripper_position)
-=======
-        end_effector_pose = np.array(self.get_gripper_position())
->>>>>>> a7e00fe21da638552ec615d39ba50a1d4d1e0d00
 
         return np.linalg.norm(end_effector_pose - self._obj_pose)
 

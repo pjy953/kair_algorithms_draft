@@ -10,14 +10,8 @@
 import argparse
 import importlib
 
-<<<<<<< HEAD
 import algorithms.common.helper_functions as common_utils
 from config.environment.open_manipulator import config as env_cfg
-=======
-from config.environment.open_manipulator import config as env_cfg
-
-import algorithms.common.helper_functions as common_utils
->>>>>>> a7e00fe21da638552ec615d39ba50a1d4d1e0d00
 from envs.open_manipulator.open_manipulator_reacher_env import OpenManipulatorReacherEnv
 
 # configurations
@@ -67,15 +61,9 @@ def main():
     common_utils.set_random_seed(args.seed, env)
 
     # agent initialization
-<<<<<<< HEAD
     module_path = "config.agent.open_manipulator_reacher_v0." + args.algo
     agent = importlib.import_module(module_path)
     agent = agent.get(env, args)
-=======
-    module_path = "examples.open_manipulator_reacher_v0." + args.algo
-    agent_config = importlib.import_module(module_path)
-    agent = agent_config.get_agent(env, args)
->>>>>>> a7e00fe21da638552ec615d39ba50a1d4d1e0d00
 
     # run
     if args.test:

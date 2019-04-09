@@ -47,13 +47,8 @@ class OpenManipulatorReacherEnv(gym.Env):
         self.done = False
         self.reward = 0
 
-<<<<<<< HEAD
         self.action_space = self.ros_interface.get_action_space()
         self.observation_space = self.ros_interface.get_observation_space()
-=======
-        self.action_space = self.ros_interface.get_action_space
-        self.observation_space = self.ros_interface.get_observation_space
->>>>>>> a7e00fe21da638552ec615d39ba50a1d4d1e0d00
         self.seed()
 
     def seed(self, seed=None):
