@@ -3,9 +3,9 @@
 from math import cos, pi, sin
 
 import numpy as np
-from config.environment import open_manipulator
 
 import rospy
+from config.environment import open_manipulator
 from envs.open_manipulator import OpenManipulatorReacherEnv
 from geometry_msgs.msg import Pose, Quaternion
 from open_manipulator_msgs.msg import JointPosition, KinematicsPose
